@@ -27,6 +27,7 @@ export default function App() {
   const [regions, setRegions] = useState(createBodyRegions);
   const [quickHandprints, setQuickHandprints] = useState(0);
   const [handprintOverrideEnabled, setHandprintOverrideEnabled] = useState(false);
+  const [mirrorFrontBack, setMirrorFrontBack] = useState(false);
   const [activePresetIds, setActivePresetIds] = useState<string[]>([]);
   const [age, setAge] = useState('');
   const [heightCm, setHeightCm] = useState<number>();
@@ -132,6 +133,7 @@ export default function App() {
     setRegions(createBodyRegions());
     setQuickHandprints(0);
     setHandprintOverrideEnabled(false);
+    setMirrorFrontBack(false);
     setActivePresetIds([]);
     setAge('');
     setHeightCm(undefined);
@@ -185,7 +187,7 @@ export default function App() {
               <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>
