@@ -40,7 +40,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .brand h1 { font-size: 20px; line-height: 1.1; margin: 0 0 4px; color: #143c3a; }
 .brand p { font-size: 12.5px; color: var(--muted); margin: 0; }
 .header-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-.header-estimate { flex: 0 1 700px; min-width: 450px; min-height: 66px; display: flex; align-items: center; justify-content: center; gap: 22px; padding: 8px 10px 8px 18px; border: 1px solid #c8ddd7; background: linear-gradient(135deg, #f4faf8, #fff); border-radius: 14px; box-shadow: 0 5px 18px rgba(20,75,72,.07); }
+.header-estimate { flex: 0 1 700px; min-width: 450px; min-height: 66px; display: flex; align-items: center; justify-content: center; gap: 22px; padding: 8px 10px 8px 18px; border: 1px solid #a9cfc6; background: linear-gradient(135deg, #eef9f6 0%, #fff 76%); border-radius: 14px; box-shadow: 0 6px 20px rgba(20,75,72,.09); }
 .header-estimate-main, .header-estimate-exact { min-width: 0; display: flex; flex-direction: column; }
 .header-estimate-main { min-width: 160px; }
 .header-estimate-main > span, .header-estimate-exact > span { color: var(--muted); font-size: 8.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
@@ -265,17 +265,25 @@ input[type='number'].measurement-input { appearance: textfield; -moz-appearance:
 .area-override-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
 .results-column { position: static; min-width: 0; margin: 0; padding: 0; }
-.results-card { overflow: hidden; border-color: #bcd5cf; box-shadow: 0 16px 40px rgba(20,75,72,.11), 0 1px 2px rgba(20,75,72,.08); }
+.results-card { overflow: hidden; border-color: #a9cfc6; box-shadow: 0 16px 40px rgba(20,75,72,.11), 0 1px 2px rgba(20,75,72,.08); }
 .results-header { padding: 19px 20px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .results-header .eyebrow { margin-bottom: 3px; }
 .results-header h2 { font-size: 17px; margin: 0; }
 .result-unit-toggle { align-self: flex-start; }
 .live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 9px; color: #5a756f; background: #ebf5f2; padding: 5px 8px; border-radius: 20px; }
 .live-dot i { width: 6px; height: 6px; background: #31a18e; border-radius: 50%; box-shadow: 0 0 0 3px rgba(49,161,142,.14); }
-.hero-result { padding: 5px 20px 20px; border-bottom: 1px solid #dce8e4; }
+.hero-result { padding: 5px 20px 20px; border-bottom: 1px solid #dce8e4; background: linear-gradient(180deg, #f9fdfc, #fff); }
 .hero-result > strong { font-family: 'Avenir Next', 'Segoe UI', sans-serif; display: block; color: var(--teal-dark); font-size: clamp(30px, 3vw, 43px); letter-spacing: -.045em; line-height: 1.12; }
 .hero-result > span { font-size: 11px; font-weight: 700; color: #53706a; display: block; margin-top: 4px; }
 .hero-result > small { display: block; color: var(--muted); font-size: 9px; margin-top: 5px; }
+.quantity-updated { position: relative; isolation: isolate; overflow: hidden; }
+.quantity-updated > * { position: relative; z-index: 1; }
+.quantity-updated::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: #ccebe3; opacity: 0; animation: quantity-surface-update 950ms ease-out; }
+@keyframes quantity-surface-update {
+  0% { opacity: 0; }
+  24% { opacity: .78; }
+  100% { opacity: 0; }
+}
 .result-metrics { display: grid; grid-template-columns: repeat(3, 1fr); background: #f6f9f8; border-bottom: 1px solid var(--line); }
 .result-metrics > div { min-width: 0; padding: 11px 9px; border-right: 1px solid var(--line); }
 .result-metrics > div:last-child { border: 0; }
@@ -365,6 +373,10 @@ footer { background: #123b3a; color: #d3e3df; padding: 24px clamp(20px,4vw,60px)
 footer p { margin: 0; max-width: 1000px; }
 footer span { white-space: nowrap; color: #d7ebe6; font-size: 11px; font-weight: 700; letter-spacing: .03em; }
 .mobile-total { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .quantity-updated::after { animation: none; }
+}
 
 @media (min-width: 1500px) {
   .workspace { grid-template-columns: minmax(600px, 1.08fr) minmax(720px, .92fr); }

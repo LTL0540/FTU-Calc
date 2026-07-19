@@ -165,7 +165,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand"><div className="brand-mark"><Pointer size={27} strokeWidth={1.8} aria-hidden="true" /></div><div><h1>FTU Calculator</h1><p>Estimate topical cream or ointment quantities</p></div></div>
-        <section className="header-estimate" aria-live="polite" aria-label="Live dispensing estimate">
+        <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
           <div className="header-estimate-exact"><span>Exact need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
           <div className="segmented compact-toggle header-unit-toggle" role="group" aria-label="Display units">

@@ -56,7 +56,7 @@ export function ResultsPanel(props: Props) {
         <div className="results-header">
           <div><span className="eyebrow">Detailed estimate</span><h2>Calculation summary</h2></div>
         </div>
-        <div className="hero-result">
+        <div key={`${displayedDispense}-${props.result.finalRequiredGrams}`} className="hero-result quantity-updated">
           <strong>{quantity(displayedDispense, true)}</strong>
           <span>{displayedPackageText}</span>
         </div>
