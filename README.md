@@ -65,6 +65,11 @@ Deploy the contents of `dist/` to any static host, including GitHub Pages, Netli
 - Build command: `pnpm build`
 - Publish directory: `dist`
 
+The included `.github/workflows/deploy-pages.yml` workflow tests, builds, and
+deploys the app to GitHub Pages after each push to `main`. In the repository's
+**Settings → Pages**, set **Source** to **GitHub Actions**. The deployed project
+URL is <https://ltl0540.github.io/FTU-Calc/>.
+
 ## Privacy and data lifecycle
 
 All state exists only in React memory for the active browser tab. The app does not write height, weight, anatomical selections, regimen information, or calculation results to cookies, local storage, session storage, a server, or analytics service. Copying happens only after a user action.
