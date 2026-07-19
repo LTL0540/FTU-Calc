@@ -25,7 +25,7 @@ Editable constants live in `src/config/clinical.ts`. Anatomical references, pack
 
 Adult anatomical totals use the rounded consensus FTU table: face and neck 2.5 FTU; scalp 3; anterior trunk 7; posterior trunk including buttocks 7; one arm excluding the hand 3; one hand 1; one leg excluding the foot 6; one foot 2; and genital region 0.5. The painter's smaller visual subdivisions are approximate but are tested to sum back to those combined totals. At 44 FTU, selecting every separately defined surface is conservatively close to the commonly published whole-body check of approximately 40 FTU; the difference reflects summing independently rounded regional guidance, including separately selectable scalp and genital surfaces.
 
-Clinical reference links and notes are maintained in `src/data/clinicalReferences.ts` and displayed inside Methodology & help. The principal sources are Long and Finlay's 1991 measured FTU study, the 2025 NHS Shropshire/Telford/Wrekin topical-preparations guide, and DermNet's dermatologist-reviewed FTU guide. FPNotebook quantities remain visible only as a clearly labelled legacy table; its 3.5-FTU trunk figure was not used because it conflicts with the 6.7 anterior and 6.8 posterior FTU means in the primary study it cites.
+Clinical reference links and notes are maintained in `src/data/clinicalReferences.ts` and displayed inside Methodology & help. The principal sources are Long and Finlay's 1991 measured FTU study, the 2025 NHS Shropshire/Telford/Wrekin topical-preparations guide, and DermNet's dermatologist-reviewed FTU guide.
 
 Package optimization prefers a single package or matching package sizes within a practical excess allowance: 20% of the requirement, with a 20 g floor and 30 g cap. Outside that allowance it minimizes excess, followed by container count. A same-size option cannot win by using more containers than the least-excess option. This keeps 120 g + 90 g for a 196 g requirement when 100 g is unavailable, while preferring 2 × 100 g when that size is enabled.
 
@@ -72,3 +72,10 @@ All state exists only in React memory for the active browser tab. The app does n
 ## Important use note
 
 This calculator produces an estimate based on fingertip-unit and handprint methods, not a patient-specific dose. Actual topical medication use may vary with product, vehicle, body site, skin condition, application thickness, hair, dressings, technique, and adherence. Verify the prescribed regimen and available package sizes before dispensing.
+
+## License
+
+Copyright © 2026 LokTin Labs. Licensed under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use,
+modification, and redistribution are permitted under its terms; commercial
+use requires separate permission from LokTin Labs.
