@@ -368,8 +368,8 @@ footer span { white-space: nowrap; color: #d7ebe6; font-size: 11px; font-weight:
 
 @media (min-width: 1500px) {
   .workspace { grid-template-columns: minmax(600px, 1.08fr) minmax(720px, .92fr); }
-  .controls-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-  .workflow-middle, .workflow-right { display: grid; gap: 18px; min-width: 0; align-content: start; }
+  .controls-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; align-self: stretch; align-content: start; }
+  .workflow-middle, .workflow-right { display: grid; gap: 18px; min-width: 0; align-content: start; position: sticky; top: 108px; }
   .workflow-middle { grid-column: 1; }
   .workflow-right { grid-column: 2; }
   .workflow-right > .patient-panel { min-height: 380px; }
