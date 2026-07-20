@@ -12,7 +12,7 @@ import { createPackageSizes } from './data/packageSizes';
 import { PROTOCOL_PRESETS } from './data/protocolPresets';
 import { ADULT_FTU_REFERENCE_GROUPS, CLINICAL_REFERENCE_LINKS } from './data/clinicalReferences';
 import type { DisplayUnit, DurationUnit, Formulation, FrequencyId, PatientMode, PediatricStage, ProtocolPreset } from './types/calculator';
-import { CLINICAL_CONSTANTS, PEDIATRIC_BSA_DEFAULTS, pediatricStageForAge } from './config/clinical';
+import { CLINICAL_CONSTANTS, getPediatricBsaFallback, pediatricStageForAge } from './config/clinical';
 import { calculateMostellerBsa } from './lib/bsa';
 import { calculateFtu } from './lib/ftuCalculations';
 import { FREQUENCIES, getSchedule } from './lib/schedule';
@@ -47,7 +47,10 @@ export default function App() {
   const regionHandprints = useMemo(() => regions.reduce((sum, region) => sum + region.adultHandprints * region.selectedFraction, 0), [regions]);
   const selectedHandprints = handprintOverrideEnabled ? quickHandprints : regionHandprints;
   const calculatedBsa = calculateMostellerBsa(heightCm, weightKg);
-  const pediatricBsaDefault = patientMode === 'child' ? PEDIATRIC_BSA_DEFAULTS[pediatricStage] : undefined;
+  const enteredAge = age.trim() === '' ? undefined : Number(age);
+  const pediatricBsaDefault = patientMode === 'child'
+    ? getPediatricBsaFallback(pediatricStage, Number.isFinite(enteredAge) ? enteredAge : undefined)
+    : undefined;
   const effectiveBsa = calculatedBsa ?? pediatricBsaDefault?.bsa;
   const usingPediatricBsaDefault = patientMode === 'child' && calculatedBsa === undefined;
 
@@ -84,11 +87,18 @@ export default function App() {
   const presetRegionIds = new Set(effectivePresets.flatMap((preset) => preset.regionIds));
   const additionalRegions = selectedRegions.filter((region) => !presetRegionIds.has(region.id));
   const describedAreas = [...activePresetLabels.map((label) => label.toLowerCase()), ...additionalRegions.map((region) => region.label.toLowerCase())];
+  const formatAreaList = (areas: string[]) => areas.length <= 1
+    ? areas[0]
+    : areas.length === 2
+      ? areas.join(' and ')
+      : `${areas.slice(0, -1).join(', ')}, and ${areas[areas.length - 1]}`;
   const areaDescription = handprintOverrideEnabled
     ? `${formatNumber(selectedHandprints, 2)} handprint equivalents (${formatNumber(result.approximateBsaPercent, 2)}% BSA)`
-    : describedAreas.length
-      ? describedAreas.slice(0, 3).join(', ') + (describedAreas.length > 3 ? ` and ${describedAreas.length - 3} more region${describedAreas.length - 3 === 1 ? '' : 's'}` : '')
-      : 'no area selected';
+    : describedAreas.length === 0
+      ? 'no area selected'
+      : describedAreas.length <= 3
+        ? formatAreaList(describedAreas)
+        : `affected areas, including ${formatAreaList(describedAreas.slice(0, 3))}`;
   const frequencyLabel = FREQUENCIES.find((item) => item.id === frequency)?.label ?? frequency;
   const durationLabel = `${formatNumber(durationValue, 2)} ${durationUnit}`;
   const suggestedPackageLabel = result.suggestedPackages.length ? result.suggestedPackages.map((grams) => `${formatNumber(grams, 1)} g`).join(' + ') : 'No package configured';
@@ -187,7 +197,7 @@ export default function App() {
               <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>
@@ -210,10 +220,10 @@ export default function App() {
         <details>
           <summary><span><HelpCircle size={20} /> Methodology &amp; help</span><small>FTUs, handprints, adjustments, and rounding</small></summary>
           <div className="method-grid">
-            <article><h3>What is an FTU?</h3><p>One fingertip unit is a line of topical medication expressed from a standard 5 mm nozzle, from the distal index-finger joint to the fingertip. The supplied reference defines 1 FTU as 0.5 g, covering two adult handprints.</p></article>
+            <article><h3>What is an FTU?</h3><p>One fingertip unit is a line of topical medication expressed from a standard 5 mm nozzle, from the distal index-finger joint to the fingertip. The commonly used convention is 1 FTU = 0.5 g, covering two adult handprints.</p></article>
             <article><h3>What is a handprint?</h3><p>The palmar surface of an adult hand and fingers is approximately 0.8% BSA and requires about 0.25 g per application. The digital body model uses standardized adult region proportions, so its output is an estimate.</p></article>
             <article><h3>How are grams calculated?</h3><p>Selected handprint equivalents × 0.25 g gives the base amount per application. An optional BSA adjustment is applied before multiplying by the exact number of applications.</p></article>
-            <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. Pediatric models use editable representative fallbacks of 0.48 m² (1 year), 0.78 m² (5 years), or 1.12 m² (10 years) when measurements are unavailable. Patient BSA is divided by the configurable 1.73 m² adult reference.</p></article>
+            <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. When a child’s measurements are unavailable, the estimate uses representative age-based BSA anchors and scales between them; entering an age refines the fallback. Measured height and weight take priority. Patient BSA is divided by the configurable 1.73 m² adult reference.</p></article>
             <article><h3>Why round up?</h3><p>A dispensing recommendation must cover the mathematical requirement. One package or matching package sizes are preferred within a practical excess allowance: 20% of need, with a 20 g floor and 30 g cap. Otherwise the recommendation minimizes excess and then container count. Actual use may vary with thickness, body site, hair, dressings, skin surface, and adherence.</p></article>
             <article className="reference-basis"><h3>Adult regional reference basis</h3><p>Practical values use the rounded consensus totals: {ADULT_FTU_REFERENCE_GROUPS.map((item) => `${item.label} ${item.ftu} FTU`).join('; ')}. Painter subdivisions are approximate, but each combined surface sums to its cited total. The 0.5 g/FTU convention is retained as a conservative standard estimate.</p><ul>{CLINICAL_REFERENCE_LINKS.map((reference) => <li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label}</a><span>{reference.note}</span></li>)}</ul></article>
           </div>

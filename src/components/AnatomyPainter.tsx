@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Brush, Eraser, MousePointer2, RotateCcw } from 'lucide-react';
 import type { BodyRegion, BodyView, PatientMode, PediatricStage } from '../types/calculator';
-import { CLINICAL_CONSTANTS, PEDIATRIC_BSA_DEFAULTS } from '../config/clinical';
+import { CLINICAL_CONSTANTS } from '../config/clinical';
 import { calculateBodyMorph, type BodyMorph } from '../lib/bodyMorph';
 import { getPairedRegionId, mirrorSegmentIndex, resizePaintedSegments } from '../lib/anatomyPairing';
 import { formatNumber } from '../lib/unitConversions';
@@ -14,6 +14,7 @@ type Props = {
   pediatricStage: PediatricStage;
   heightCm?: number;
   weightKg?: number;
+  modelBsa?: number;
   mirrorFrontBack: boolean;
   onMirrorFrontBackChange: (enabled: boolean) => void;
   onChange: (id: string, fraction: number, paintedSegments?: number[]) => void;
@@ -188,7 +189,7 @@ const FIGURE_SEAMS: Record<BodyView, FigurePath[]> = {
   ],
 };
 
-export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
+export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, modelBsa: suppliedModelBsa, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
   const [tool, setTool] = useState<Tool>('paint');
   const [isDragging, setIsDragging] = useState(false);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
@@ -315,7 +316,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
     const modelLabel = patientMode === 'adult'
       ? 'Adult'
       : pediatricStage === 'older' ? 'Older child' : pediatricStage === 'younger' ? 'Younger child' : 'Infant';
-    const modelBsa = patientMode === 'adult' ? CLINICAL_CONSTANTS.referenceBsa : PEDIATRIC_BSA_DEFAULTS[pediatricStage].bsa;
+    const modelBsa = suppliedModelBsa ?? CLINICAL_CONSTANTS.referenceBsa;
     const profileLabel = bodyMorph.measured
       ? `${bodyMorph.statureLabel} · ${bodyMorph.buildLabel.toLowerCase()} visual`
       : `${formatNumber(modelBsa, 2)} m² model`;

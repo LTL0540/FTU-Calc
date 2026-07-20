@@ -106,7 +106,7 @@ export function PatientSizePanel(props: Props) {
               return <button key={stage} className={props.pediatricStage === stage ? 'active' : ''} onClick={() => props.onPediatricStageChange(stage)} aria-pressed={props.pediatricStage === stage}><span>{label}</span><small>{stageDefault?.ageRange ?? (stage === 'older' ? '6–10+ yr' : stage === 'younger' ? '3–5 yr' : '0–2 yr')}</small></button>;
             })}
           </div>
-          {props.pediatricBsaDefault && <p className="pediatric-assumption">Uses <strong>{props.pediatricBsaDefault.bsa.toFixed(2)} m²</strong> ({props.pediatricBsaDefault.assumedAge}) when measurements are unavailable. Age selects a band automatically; measured height and weight take priority.{numericAge !== undefined && numericAge > 10 ? ' For ages over 10, enter measured size when possible.' : ''}</p>}
+          {props.pediatricBsaDefault && <p className="pediatric-assumption">Uses <strong>{props.pediatricBsaDefault.bsa.toFixed(2)} m²</strong> ({props.pediatricBsaDefault.assumedAge}) when measurements are unavailable. Age selects a band automatically and refines the fallback within that range; measured height and weight take priority.{numericAge !== undefined && numericAge > 10 ? ' For ages over 10, enter measured size when possible.' : ''}</p>}
         </div>
       )}
       <div className={`patient-field-grid${props.patientMode === 'child' ? ' has-age' : ''}`}>
