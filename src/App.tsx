@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, HelpCircle, Pointer, RotateCcw } from 'lucide-react';
+import { CheckCircle2, HelpCircle, RotateCcw } from 'lucide-react';
 import { AnatomyPainter } from './components/AnatomyPainter';
 import { PatientSizePanel } from './components/PatientSizePanel';
 import { RegimenPanel } from './components/RegimenPanel';
@@ -20,6 +20,16 @@ import { quantityWarnings, validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import './styles.css';
 
+function FtuMark() {
+  return (
+    <svg className="ftu-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <path d="M18 5.5a3.4 3.4 0 0 1 3.4 3.4v9.2l1.3-1a2.7 2.7 0 0 1 3.8.5c.8 1 .6 2.5-.3 3.3l-5.1 5.3a6 6 0 0 1-4.4 1.9h-1.1a6.2 6.2 0 0 1-5.4-3.2l-1.8-3.3a2.7 2.7 0 0 1 1.1-3.7 2.7 2.7 0 0 1 3.6.9l1 1.5V11a3.4 3.4 0 0 1 3.2-3.5Z" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M18 9.3v7.2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" opacity=".55" />
+      <path d="M24.8 8.2h4.1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" opacity=".72" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [patientMode, setPatientMode] = useState<PatientMode>('adult');
   const [pediatricStage, setPediatricStage] = useState<PediatricStage>('younger');
@@ -28,6 +38,7 @@ export default function App() {
   const [quickHandprints, setQuickHandprints] = useState(0);
   const [handprintOverrideEnabled, setHandprintOverrideEnabled] = useState(false);
   const [mirrorFrontBack, setMirrorFrontBack] = useState(false);
+  const [painterClearSignal, setPainterClearSignal] = useState(0);
   const [activePresetIds, setActivePresetIds] = useState<string[]>([]);
   const [age, setAge] = useState('');
   const [heightCm, setHeightCm] = useState<number>();
@@ -134,6 +145,7 @@ export default function App() {
     setRegions(createBodyRegions());
     setHandprintOverrideEnabled(false);
     setActivePresetIds([]);
+    setPainterClearSignal((current) => current + 1);
   };
 
   const reset = () => {
@@ -156,6 +168,7 @@ export default function App() {
     setDurationUnit('days');
     setAllowancePercent(0);
     setPackageSizes(createPackageSizes());
+    setPainterClearSignal((current) => current + 1);
   };
 
   const applyPreset = (preset: ProtocolPreset) => {
@@ -174,7 +187,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand"><div className="brand-mark"><Pointer size={27} strokeWidth={1.8} aria-hidden="true" /></div><div><h1>FTU Calculator</h1><p>Estimate topical cream or ointment quantities</p></div></div>
+        <div className="brand"><div className="brand-mark"><FtuMark /></div><div><h1>FTU Calculator</h1><p>Estimate topical cream or ointment quantities</p></div></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
           <div className="header-estimate-exact"><span>Exact need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
@@ -197,7 +210,7 @@ export default function App() {
               <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>

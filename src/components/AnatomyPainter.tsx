@@ -15,6 +15,7 @@ type Props = {
   heightCm?: number;
   weightKg?: number;
   modelBsa?: number;
+  clearSignal: number;
   mirrorFrontBack: boolean;
   onMirrorFrontBackChange: (enabled: boolean) => void;
   onChange: (id: string, fraction: number, paintedSegments?: number[]) => void;
@@ -189,7 +190,7 @@ const FIGURE_SEAMS: Record<BodyView, FigurePath[]> = {
   ],
 };
 
-export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, modelBsa: suppliedModelBsa, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
+export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
   const [tool, setTool] = useState<Tool>('paint');
   const [isDragging, setIsDragging] = useState(false);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
@@ -223,6 +224,12 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
       segmentMemory.current[region.id] = region.paintedSegments;
     });
   }, [regions]);
+
+  useEffect(() => {
+    setActiveRegionId(null);
+    setIsDragging(false);
+    segmentMemory.current = {};
+  }, [clearSignal]);
 
   const nextSegmentsForTool = (region: BodyRegion, targetSegment?: number) => {
     const selected = new Set(segmentMemory.current[region.id] ?? region.paintedSegments);
