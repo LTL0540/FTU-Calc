@@ -20,16 +20,6 @@ import { quantityWarnings, validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import './styles.css';
 
-function FtuMark() {
-  return (
-    <svg className="ftu-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 5.5a3.4 3.4 0 0 1 3.4 3.4v9.2l1.3-1a2.7 2.7 0 0 1 3.8.5c.8 1 .6 2.5-.3 3.3l-5.1 5.3a6 6 0 0 1-4.4 1.9h-1.1a6.2 6.2 0 0 1-5.4-3.2l-1.8-3.3a2.7 2.7 0 0 1 1.1-3.7 2.7 2.7 0 0 1 3.6.9l1 1.5V11a3.4 3.4 0 0 1 3.2-3.5Z" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M18 9.3v7.2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" opacity=".55" />
-      <path d="M24.8 8.2h4.1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" opacity=".72" />
-    </svg>
-  );
-}
-
 export default function App() {
   const [patientMode, setPatientMode] = useState<PatientMode>('adult');
   const [pediatricStage, setPediatricStage] = useState<PediatricStage>('younger');
@@ -187,7 +177,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand"><div className="brand-mark"><FtuMark /></div><div><h1>FTU Calculator</h1><p>Estimate topical cream or ointment quantities</p></div></div>
+        <div className="brand"><img className="brand-logo" src="/FTU-Calc/dermdose-wordmark.png" alt="DermDose" /><div><h1>Topical Quantity Calculator</h1></div></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
           <div className="header-estimate-exact"><span>Exact need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
