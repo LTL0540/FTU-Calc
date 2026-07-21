@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, HelpCircle, RotateCcw } from 'lucide-react';
+import { Check, CheckCircle2, Clipboard, HelpCircle, RotateCcw } from 'lucide-react';
 import { AnatomyPainter } from './components/AnatomyPainter';
 import { PatientSizePanel } from './components/PatientSizePanel';
 import { RegimenPanel } from './components/RegimenPanel';
@@ -11,7 +11,7 @@ import { BODY_REGION_REFERENCE_NOTE, createBodyRegions } from './data/bodyRegion
 import { createPackageSizes } from './data/packageSizes';
 import { PROTOCOL_PRESETS } from './data/protocolPresets';
 import { ADULT_FTU_REFERENCE_GROUPS, CLINICAL_REFERENCE_LINKS } from './data/clinicalReferences';
-import type { DisplayUnit, DurationUnit, Formulation, FrequencyId, PatientMode, PediatricStage, ProtocolPreset } from './types/calculator';
+import type { CalculatorResult, DisplayUnit, DurationUnit, Formulation, FrequencyId, PatientMode, PediatricStage, ProtocolPreset } from './types/calculator';
 import { CLINICAL_CONSTANTS, getPediatricBsaFallback, pediatricStageForAge } from './config/clinical';
 import { calculateMostellerBsa } from './lib/bsa';
 import { calculateFtu } from './lib/ftuCalculations';
@@ -19,6 +19,40 @@ import { FREQUENCIES, getSchedule } from './lib/schedule';
 import { quantityWarnings, validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import './styles.css';
+
+function MobileResultsDrawer({ result, displayUnit, onDisplayUnitChange, summary }: { result: CalculatorResult; displayUnit: DisplayUnit; onDisplayUnitChange: (unit: DisplayUnit) => void; summary: string }) {
+  const [copied, setCopied] = useState(false);
+  const quantity = (grams: number, practical = false) => {
+    const gramText = `${formatNumber(grams, practical ? 1 : 2)} g`;
+    if (displayUnit === 'g') return gramText;
+    if (displayUnit === 'oz') return formatOunces(grams);
+    return `${gramText} / ${formatOunces(grams)}`;
+  };
+  const copy = async () => {
+    await navigator.clipboard.writeText(summary);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  return <details className="mobile-result-drawer">
+    <summary>
+      <span><small>Suggested dispense</small><strong>{quantity(result.suggestedDispensedGrams, true)}</strong></span>
+      <span><small>Exact need</small><strong>{quantity(result.finalRequiredGrams)}</strong></span>
+    </summary>
+    <div className="mobile-result-content">
+      <div className="segmented compact-toggle" role="group" aria-label="Display units">
+        <button className={displayUnit === 'g' ? 'active' : ''} onClick={() => onDisplayUnitChange('g')} aria-pressed={displayUnit === 'g'}>Grams</button>
+        <button className={displayUnit === 'oz' ? 'active' : ''} onClick={() => onDisplayUnitChange('oz')} aria-pressed={displayUnit === 'oz'}>Ounces</button>
+        <button className={displayUnit === 'both' ? 'active' : ''} onClick={() => onDisplayUnitChange('both')} aria-pressed={displayUnit === 'both'}>Both</button>
+      </div>
+      <div className="mobile-result-metrics">
+        <div><span>Per application</span><strong>{quantity(result.formulationAdjustedGramsPerApplication)}</strong><small>{formatNumber(result.ftuPerApplication, 2)} FTU</small></div>
+        <div><span>Exact requirement</span><strong>{quantity(result.finalRequiredGrams)}</strong><small>{formatNumber(result.totalApplications, 2)} applications</small></div>
+      </div>
+      <button type="button" className="mobile-copy-button" onClick={copy}>{copied ? <Check size={15} /> : <Clipboard size={15} />}{copied ? 'Copied' : 'Copy summary'}</button>
+    </div>
+  </details>;
+}
 
 export default function App() {
   const [patientMode, setPatientMode] = useState<PatientMode>('adult');
@@ -109,13 +143,31 @@ export default function App() {
     if (displayUnit === 'oz') return formatOunces(grams);
     return `${gramText} / ${formatOunces(grams)}`;
   };
-
   const updateAge = (value: string) => {
     setAge(value);
     if (value.trim() === '') return;
     const ageYears = Number(value);
     if (Number.isFinite(ageYears) && ageYears >= 0) setPediatricStage(pediatricStageForAge(ageYears));
   };
+
+  const patientSizeProps = {
+    patientMode,
+    pediatricStage,
+    pediatricBsaDefault,
+    age,
+    heightCm,
+    weightKg,
+    referenceBsa,
+    applyBsa,
+    onPatientModeChange: setPatientMode,
+    onPediatricStageChange: setPediatricStage,
+    onAgeChange: updateAge,
+    onHeightChange: setHeightCm,
+    onWeightChange: setWeightKg,
+    onReferenceBsaChange: setReferenceBsa,
+    onApplyBsaChange: setApplyBsa,
+  };
+  const mobileSummary = `Apply to ${areaDescription} ${frequencyLabel.toLowerCase()} for ${durationLabel}. Estimated amount per application: ${formatNumber(result.ftuPerApplication, 2)} FTU (${formatNumber(result.formulationAdjustedGramsPerApplication, 2)} g). Estimated treatment requirement: ${formatNumber(result.finalRequiredGrams, 2)} g. Suggested quantity to dispense: ${suggestedPackageLabel}.`;
 
   const updateRegion = (id: string, fraction: number, paintedSegments?: number[]) => {
     const segments = paintedSegments
@@ -200,7 +252,7 @@ export default function App() {
               <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>
@@ -208,7 +260,7 @@ export default function App() {
         <div className="controls-stack">
           <div className="workflow-middle">
             <RegimenPanel frequency={frequency} customApplications={customApplications} durationValue={durationValue} durationUnit={durationUnit} allowancePercent={allowancePercent} totalApplications={schedule.totalApplications} daysPerMonth={CLINICAL_CONSTANTS.daysPerMonth} onFrequencyChange={setFrequency} onCustomApplicationsChange={setCustomApplications} onDurationValueChange={setDurationValue} onDurationUnitChange={setDurationUnit} onAllowanceChange={setAllowancePercent} />
-            <PatientSizePanel patientMode={patientMode} pediatricStage={pediatricStage} pediatricBsaDefault={pediatricBsaDefault} age={age} heightCm={heightCm} weightKg={weightKg} referenceBsa={referenceBsa} applyBsa={applyBsa} onPatientModeChange={setPatientMode} onPediatricStageChange={setPediatricStage} onAgeChange={updateAge} onHeightChange={setHeightCm} onWeightChange={setWeightKg} onReferenceBsaChange={setReferenceBsa} onApplyBsaChange={setApplyBsa} />
+            <PatientSizePanel {...patientSizeProps} />
           </div>
           <div className="workflow-right">
             <ResultsPanel result={result} displayUnit={displayUnit} regions={handprintOverrideEnabled ? [] : regions} selectedHandprints={selectedHandprints} areaDescription={areaDescription} activePresetLabels={activePresetLabels} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} effectiveBsa={effectiveBsa} applyBsa={applyBsa} frequencyLabel={frequencyLabel} durationLabel={durationLabel} allowancePercent={allowancePercent} warnings={warnings} usingPediatricBsaDefault={usingPediatricBsaDefault} pediatricBsaDefault={pediatricBsaDefault} />
@@ -235,7 +287,7 @@ export default function App() {
 
       <footer><p>This calculator provides an estimate based on fingertip-unit and handprint methods. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Verify the prescribed regimen and available package sizes before dispensing.</p><span>a LokTin Labs tool</span></footer>
 
-      <div className="mobile-total"><div><span>Estimated requirement</span><strong>{formatNumber(result.finalRequiredGrams, 2)} g {displayUnit !== 'g' && `· ${formatOunces(result.finalRequiredGrams)}`}</strong></div><div><span>Suggested dispense</span><strong>{formatNumber(result.suggestedDispensedGrams, 1)} g</strong></div></div>
+      <MobileResultsDrawer result={result} displayUnit={displayUnit} onDisplayUnitChange={setDisplayUnit} summary={mobileSummary} />
     </div>
   );
 }
