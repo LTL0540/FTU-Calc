@@ -243,7 +243,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand"><img className="brand-logo" src="/FTU-Calc/dermdose-wordmark.png" alt="DermDose" /><div><h1>Topical Quantity Calculator</h1></div></div>
+        <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><h1 className="sr-only">QuantiDerm topical quantity calculator</h1></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
           <div className="header-estimate-exact"><span>Exact need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
