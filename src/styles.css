@@ -80,6 +80,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .painter-shell { position: relative; padding: 12px 18px 12px; }
 .tool-row { display: grid; grid-template-columns: minmax(110px, 1fr) auto repeat(2, minmax(110px, 1fr)) auto; gap: 7px; width: 100%; }
 .tool { border: 1px solid #d5e0dc; background: white; border-radius: 9px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 8px; font-size: 11px; font-weight: 700; }
+.mobile-workflow-button { display: none; }
 .tool.active { color: white; background: var(--teal); border-color: var(--teal); box-shadow: 0 4px 10px rgba(20,104,97,.18); }
 .tool.clear-tool { color: #7d5145; min-width: 82px; }
 .mirror-toggle { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border: 1px solid #d5e0dc; border-radius: 9px; background: #fff; color: #5f726e; font-size: 10px; font-weight: 700; white-space: nowrap; cursor: pointer; }
@@ -88,11 +89,12 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .mirror-toggle input { width: 15px; height: 15px; min-height: 0; padding: 0; margin: 0; accent-color: var(--teal); }
 .microcopy { margin: 6px 2px 3px; font-size: 10px; color: #74827f; }
 .body-views { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.body-view-card { background: linear-gradient(180deg,#f8fbfa,#f1f6f4); border: 1px solid #e1e9e6; border-radius: 14px; min-width: 0; padding: 10px 4px 2px; }
+.body-view-card { position: relative; background: linear-gradient(180deg,#f8fbfa,#f1f6f4); border: 1px solid #e1e9e6; border-radius: 14px; min-width: 0; padding: 10px 4px 2px; }
 .body-view-label { padding: 0 9px 3px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .body-view-label > span:first-child { font-family: 'Avenir Next', 'Segoe UI', sans-serif; font-size: 12px; font-weight: 800; }
 .body-view-label small { color: var(--muted); font-size: 8px; white-space: nowrap; }
-.body-svg { display: block; width: 100%; max-height: 420px; min-height: 330px; touch-action: pan-y; }
+.body-svg { display: block; width: 100%; max-height: 420px; min-height: 330px; touch-action: none; }
+.scroll-gutter { display: none; }
 .anatomy-region-base { stroke: none; transition: filter .15s; }
 .anatomy-segment-fill { fill: #58a89b; stroke: none; }
 .face-details { fill: #356f68; }
@@ -121,6 +123,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .coverage-options button { min-height: 31px; padding: 4px 2px; border: 1px solid #d2ded9; border-radius: 7px; background: #fff; color: #5f726e; font-size: 9px; font-weight: 700; }
 .coverage-options button:hover { border-color: #92b5ae; background: #f0f7f5; }
 .coverage-options button.active { color: #fff; border-color: var(--teal); background: var(--teal); }
+.coverage-slider, .coverage-slider-marks { display: none; }
 .reference-note { margin: 0; padding: 10px 20px 13px; display: flex; align-items: flex-start; gap: 7px; font-size: 10px; color: #667b76; border-top: 1px solid #edf1ef; }
 .reference-note svg { flex: 0 0 auto; color: var(--teal); margin-top: 1px; }
 
@@ -432,17 +435,11 @@ footer span { white-space: nowrap; color: #d7ebe6; font-size: 11px; font-weight:
   .mode-tabs { padding: 0 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; overflow: visible; }
   .mode-tabs button { min-height: 48px; min-width: 0; padding: 8px 2px; font-size: 10px; }
   .painter-shell { padding: 12px 9px 10px; }
+  .mobile-workflow-button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border: 1px solid #a9d2c9; border-radius: 10px; background: #edf8f5; color: var(--teal-dark); font-size: 11px; font-weight: 800; }
+  .mobile-workflow-button.active { background: var(--teal); border-color: var(--teal); color: #fff; }
   .mobile-painter-drawer { display: block; }
-  .mobile-drawer-tabs { position: absolute; z-index: 8; top: 106px; right: 13px; display: grid; gap: 6px; }
-  .mobile-drawer-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 34px; padding: 6px 8px; border: 1px solid #b8d4cd; border-radius: 9px; background: rgba(255,255,255,.94); color: #35645e; font-size: 9px; font-weight: 800; box-shadow: 0 3px 9px rgba(22,60,74,.09); }
-  .mobile-drawer-tabs button.active { background: var(--teal); border-color: var(--teal); color: #fff; }
-  .mobile-drawer-panel { position: absolute; z-index: 12; top: 98px; right: 9px; left: 9px; max-height: min(620px, calc(100vh - 150px)); overflow: auto; border: 1px solid #9dcfc4; border-radius: 13px; background: rgba(255,255,255,.98); box-shadow: 0 18px 38px rgba(22,60,74,.22); }
-  .mobile-drawer-panel .patient-panel { border: 0; border-radius: 13px; box-shadow: none; min-height: 0; }
-  .mobile-drawer-panel .patient-panel .section-heading { padding-right: 46px; }
-  .mobile-drawer-close { position: absolute; z-index: 2; top: 10px; right: 10px; width: 32px; min-height: 32px; padding: 0; border: 1px solid #d4dfdb; border-radius: 8px; background: #fff; color: #42645f; display: grid; place-items: center; }
-  .mobile-help-content { padding: 22px 46px 22px 20px; }
-  .mobile-help-content h3 { margin: 0 0 8px; font-size: 17px; }
-  .mobile-help-content p { margin: 0 0 10px; color: #54706b; font-size: 12px; }
+  .mobile-drawer-panel { margin: 8px 0 10px; max-height: min(68vh, 610px); overflow: auto; border: 1px solid #9dcfc4; border-radius: 13px; background: #fff; box-shadow: 0 10px 24px rgba(22,60,74,.12); }
+  .mobile-drawer-panel .patient-panel, .mobile-drawer-panel .schedule-panel { border: 0; border-radius: 13px; box-shadow: none; min-height: 0; }
   .tool-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tool { min-height: 44px; }
   .mirror-toggle { min-height: 44px; }
@@ -452,13 +449,19 @@ footer span { white-space: nowrap; color: #d7ebe6; font-size: 11px; font-weight:
   .body-view-card { padding: 8px 1px 2px; }
   .body-view-label { padding: 0 5px; }
   .body-svg { min-height: 300px; max-height: 380px; }
+  .scroll-gutter { position: absolute; z-index: 4; top: 33px; bottom: 0; width: 14px; display: block; touch-action: pan-y; }
+  .scroll-gutter-left { left: 0; }
+  .scroll-gutter-right { right: 0; }
   .anatomy-region { stroke-width: 1.8; }
   .region-inspector { grid-template-columns: 1fr; gap: 7px; }
+  .coverage-options { display: none; }
+  .coverage-slider { display: block; width: 100%; min-height: 34px; padding: 0; accent-color: var(--teal); }
+  .coverage-slider-marks { display: flex; justify-content: space-between; color: #68817c; font-size: 8px; font-weight: 700; margin-top: -2px; }
   .quick-grid, .field-grid.two-col { grid-template-columns: 1fr; }
   .compound-field { grid-column: auto; }
   .section-card { padding: 16px; }
   .patient-panel .section-heading { align-items: flex-start; }
-  .workflow-middle > .patient-panel { display: none; }
+  .workflow-middle > .patient-panel, .workflow-middle > .schedule-panel { display: none; }
   .workflow-right > .results-column { display: none; }
   .patient-mode-toggle { margin-left: auto; }
   .reference-summary { padding: 15px 16px; }

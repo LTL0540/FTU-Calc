@@ -167,6 +167,20 @@ export default function App() {
     onReferenceBsaChange: setReferenceBsa,
     onApplyBsaChange: setApplyBsa,
   };
+  const regimenProps = {
+    frequency,
+    customApplications,
+    durationValue,
+    durationUnit,
+    allowancePercent,
+    totalApplications: schedule.totalApplications,
+    daysPerMonth: CLINICAL_CONSTANTS.daysPerMonth,
+    onFrequencyChange: setFrequency,
+    onCustomApplicationsChange: setCustomApplications,
+    onDurationValueChange: setDurationValue,
+    onDurationUnitChange: setDurationUnit,
+    onAllowanceChange: setAllowancePercent,
+  };
   const mobileSummary = `Apply to ${areaDescription} ${frequencyLabel.toLowerCase()} for ${durationLabel}. Estimated amount per application: ${formatNumber(result.ftuPerApplication, 2)} FTU (${formatNumber(result.formulationAdjustedGramsPerApplication, 2)} g). Estimated treatment requirement: ${formatNumber(result.finalRequiredGrams, 2)} g. Suggested quantity to dispense: ${suggestedPackageLabel}.`;
 
   const updateRegion = (id: string, fraction: number, paintedSegments?: number[]) => {
@@ -252,14 +266,14 @@ export default function App() {
               <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>
 
         <div className="controls-stack">
           <div className="workflow-middle">
-            <RegimenPanel frequency={frequency} customApplications={customApplications} durationValue={durationValue} durationUnit={durationUnit} allowancePercent={allowancePercent} totalApplications={schedule.totalApplications} daysPerMonth={CLINICAL_CONSTANTS.daysPerMonth} onFrequencyChange={setFrequency} onCustomApplicationsChange={setCustomApplications} onDurationValueChange={setDurationValue} onDurationUnitChange={setDurationUnit} onAllowanceChange={setAllowancePercent} />
+            <RegimenPanel {...regimenProps} />
             <PatientSizePanel {...patientSizeProps} />
           </div>
           <div className="workflow-right">

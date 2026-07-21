@@ -27,7 +27,7 @@ export function RegimenPanel(props: Props) {
     if (standardAllowances.includes(props.allowancePercent)) setCustomAllowance(false);
   }, [props.allowancePercent]);
   return (
-    <section className="card section-card">
+    <section className="card section-card schedule-panel">
       <div className="section-heading"><div className="icon-tile"><CalendarDays size={19} /></div><div><h2>Treatment schedule</h2><p>Supports fractional and intermittent regimens</p></div><div className="schedule-count"><span>Total applications</span><strong>{formatNumber(props.totalApplications, 2)}</strong></div></div>
       <div className="regimen-primary">
         <label><span>Frequency</span><select value={props.frequency} onChange={(event) => props.onFrequencyChange(event.target.value as FrequencyId)}>{FREQUENCIES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>

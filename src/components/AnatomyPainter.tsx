@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Brush, Eraser, Info, MousePointer2, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
+import { Brush, CalendarDays, Eraser, MousePointer2, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import type { BodyRegion, BodyView, PatientMode, PediatricStage } from '../types/calculator';
 import { CLINICAL_CONSTANTS } from '../config/clinical';
 import { calculateBodyMorph, type BodyMorph } from '../lib/bodyMorph';
@@ -17,6 +17,7 @@ type Props = {
   modelBsa?: number;
   clearSignal: number;
   mobilePatientPanel?: ReactNode;
+  mobileSchedulePanel?: ReactNode;
   mirrorFrontBack: boolean;
   onMirrorFrontBackChange: (enabled: boolean) => void;
   onChange: (id: string, fraction: number, paintedSegments?: number[]) => void;
@@ -191,11 +192,11 @@ const FIGURE_SEAMS: Record<BodyView, FigurePath[]> = {
   ],
 };
 
-export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mobilePatientPanel, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
+export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mobilePatientPanel, mobileSchedulePanel, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
   const [tool, setTool] = useState<Tool>('paint');
   const [isDragging, setIsDragging] = useState(false);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
-  const [mobileDrawer, setMobileDrawer] = useState<'size' | 'help' | null>(null);
+  const [mobileDrawer, setMobileDrawer] = useState<'size' | 'schedule' | null>(null);
   const lastBrushAt = useRef(0);
   const segmentMemory = useRef<Record<string, number[]>>({});
   const activeRegion = regions.find((region) => region.id === activeRegionId);
@@ -337,6 +338,8 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
           <span>{view === 'front' ? 'Front' : 'Back'}</span>
           <small title="Visual profile only; does not change the calculation">{profileLabel}</small>
         </div>
+        <div className="scroll-gutter scroll-gutter-left" aria-hidden="true" />
+        <div className="scroll-gutter scroll-gutter-right" aria-hidden="true" />
         <svg
           className={`body-svg ${patientMode}${patientMode === 'child' ? ` ${pediatricStage}` : ''}`}
           viewBox={`-5 0 170 ${canvasHeight}`}
@@ -475,6 +478,12 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
   return (
     <div className="painter-shell">
       <div className="tool-row" role="toolbar" aria-label="Anatomy selection tools">
+        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'size' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'}>
+          <SlidersHorizontal size={17} /> Patient size
+        </button>
+        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'schedule' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'schedule' ? null : 'schedule')} aria-expanded={mobileDrawer === 'schedule'}>
+          <CalendarDays size={17} /> Treatment schedule
+        </button>
         <button className={tool === 'paint' ? 'tool active' : 'tool'} onClick={() => setTool('paint')} aria-pressed={tool === 'paint'}>
           <Brush size={17} /> Paint
         </button>
@@ -495,22 +504,8 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
         {mirrorFrontBack ? ' Paired front and back surfaces update together.' : ''}
       </p>
       <div className="mobile-painter-drawer">
-        <div className="mobile-drawer-tabs" aria-label="Mobile painter controls">
-          <button type="button" className={mobileDrawer === 'size' ? 'active' : ''} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'}>
-            <SlidersHorizontal size={15} /> Patient size
-          </button>
-          <button type="button" className={mobileDrawer === 'help' ? 'active' : ''} onClick={() => setMobileDrawer((current) => current === 'help' ? null : 'help')} aria-expanded={mobileDrawer === 'help'}>
-            <Info size={15} /> Painter help
-          </button>
-        </div>
-        {mobileDrawer && <section className="mobile-drawer-panel" aria-label={mobileDrawer === 'size' ? 'Patient size controls' : 'Painter help'}>
-          <button type="button" className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} aria-label="Close drawer"><X size={18} /></button>
-          {mobileDrawer === 'size' ? mobilePatientPanel : <div className="mobile-help-content">
-            <span className="eyebrow">Painter help</span>
-            <h3>Choose the affected surface</h3>
-            <p>Tap a body region to add or remove a 20% zone. Use <strong>Fill region</strong> when the whole surface is affected.</p>
-            <p>The space around each figure scrolls the page; only the outlined body regions capture paint gestures.</p>
-          </div>}
+        {mobileDrawer && <section className="mobile-drawer-panel" aria-label={mobileDrawer === 'size' ? 'Patient size controls' : 'Treatment schedule controls'}>
+          {mobileDrawer === 'size' ? mobilePatientPanel : mobileSchedulePanel}
         </section>}
       </div>
       <div className="body-views" onPointerUp={() => setIsDragging(false)}>
@@ -540,6 +535,8 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, heightCm,
                   </button>
                 ))}
               </div>
+              <input className="coverage-slider" aria-label={`Coverage of ${activeRegion.label}`} type="range" min="0" max={SEGMENT_COUNT} step="1" value={activeRegion.paintedSegments.length} onChange={(event) => setCoverage(activeRegion, Number(event.target.value))} />
+              <div className="coverage-slider-marks" aria-hidden="true"><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span></div>
             </div>
           </>
         ) : <span>Select a body region to fine-tune the affected percentage.</span>}
