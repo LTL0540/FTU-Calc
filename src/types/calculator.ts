@@ -33,6 +33,8 @@ export type DurationUnit = 'days' | 'weeks' | 'months';
 
 export type CalculatorInputs = {
   selectedHandprints: number;
+  selectedFtu?: number;
+  selectedBsaPercent?: number;
   formulation: Formulation;
   formulationFactor: number;
   applyFormulationFactor: boolean;
@@ -43,6 +45,7 @@ export type CalculatorInputs = {
   applyBsaAdjustment: boolean;
   applicationsPerDay?: number;
   applicationsPerWeek?: number;
+  totalApplications?: number;
   durationDays: number;
   allowancePercent: number;
   minimumTreatmentGrams?: number;

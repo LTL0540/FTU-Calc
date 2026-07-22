@@ -4,7 +4,7 @@ import type { CalculatorInputs } from '../types/calculator';
 export function validateInputs(inputs: CalculatorInputs): string[] {
   const warnings: string[] = [];
   if (inputs.selectedHandprints < 0) warnings.push('Selected area cannot be negative.');
-  if (inputs.selectedHandprints * 0.8 > 100) warnings.push('Selected regions exceed 100% estimated BSA. Check for overlapping selections.');
+  if ((inputs.selectedBsaPercent ?? inputs.selectedHandprints * 0.8) > 100.01) warnings.push('Selected regions exceed 100% estimated BSA. Check for overlapping selections.');
   if (inputs.heightCm !== undefined && inputs.heightCm <= 0) warnings.push('Height must be greater than zero.');
   if (inputs.weightKg !== undefined && inputs.weightKg <= 0) warnings.push('Weight must be greater than zero.');
   if (inputs.patientBsa !== undefined && inputs.patientBsa <= 0) warnings.push('Manual or calculated BSA must be greater than zero.');

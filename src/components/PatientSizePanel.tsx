@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Calculator } from 'lucide-react';
 import type { PatientMode, PediatricStage } from '../types/calculator';
+import type { PediatricFtuReference } from '../data/pediatricFtu';
 import { calculateMostellerBsa, feetInchesToCm, poundsToKg } from '../lib/bsa';
 import { formatNumber } from '../lib/unitConversions';
 
@@ -8,10 +9,12 @@ type Props = {
   patientMode: PatientMode;
   pediatricStage: PediatricStage;
   pediatricBsaDefault?: { bsa: number; assumedAge: string; ageRange: string };
+  pediatricFtuReference?: PediatricFtuReference;
   age: string;
   heightCm?: number;
   weightKg?: number;
   referenceBsa: number;
+  adultReferenceBsa: number;
   applyBsa: boolean;
   onPatientModeChange: (value: PatientMode) => void;
   onPediatricStageChange: (value: PediatricStage) => void;
@@ -72,13 +75,7 @@ function DecimalMeasurement({ ariaLabel, placeholder, value, onChange }: Decimal
 
 export function PatientSizePanel(props: Props) {
   const calculatedBsa = calculateMostellerBsa(props.heightCm, props.weightKg);
-  const effectiveBsa = calculatedBsa ?? props.pediatricBsaDefault?.bsa;
-  const ratio = effectiveBsa && effectiveBsa > 0 ? effectiveBsa / props.referenceBsa : undefined;
-  const bsaSource = calculatedBsa !== undefined
-      ? 'From height + weight'
-      : props.pediatricBsaDefault
-        ? props.pediatricBsaDefault.assumedAge
-        : undefined;
+  const ratio = calculatedBsa && calculatedBsa > 0 ? calculatedBsa / props.referenceBsa : undefined;
   const heightFeet = props.heightCm ? Math.floor(props.heightCm / 30.48) : undefined;
   const heightInches = props.heightCm ? (props.heightCm / 2.54) - (heightFeet! * 12) : undefined;
   const numericAge = props.age.trim() === '' ? undefined : Number(props.age);
@@ -93,7 +90,7 @@ export function PatientSizePanel(props: Props) {
         </div>
         <label className="header-bsa-switch">
           <span>Adjust by BSA</span>
-          <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
+          <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} disabled={!calculatedBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
         </label>
       </div>
       {props.patientMode === 'child' && (
@@ -106,7 +103,7 @@ export function PatientSizePanel(props: Props) {
               return <button key={stage} className={props.pediatricStage === stage ? 'active' : ''} onClick={() => props.onPediatricStageChange(stage)} aria-pressed={props.pediatricStage === stage}><span>{label}</span><small>{stageDefault?.ageRange ?? (stage === 'older' ? '6–10+ yr' : stage === 'younger' ? '3–5 yr' : '0–2 yr')}</small></button>;
             })}
           </div>
-          {props.pediatricBsaDefault && <p className="pediatric-assumption">Uses <strong>{props.pediatricBsaDefault.bsa.toFixed(2)} m²</strong> ({props.pediatricBsaDefault.assumedAge}) when measurements are unavailable. Age selects a band automatically and refines the fallback within that range; measured height and weight take priority.{numericAge !== undefined && numericAge > 10 ? ' For ages over 10, enter measured size when possible.' : ''}</p>}
+          {props.pediatricBsaDefault && <p className="pediatric-assumption">Uses the <strong>{props.pediatricFtuReference?.label}</strong> regional FTU table. Age selects the matching band. The representative BSA is <strong>{props.pediatricBsaDefault.bsa.toFixed(2)} m²</strong> and is used only as the reference when measured-size adjustment is on.{numericAge !== undefined && numericAge > 10 ? ' For ages over 10, the adult regional FTU reference is used.' : ''}</p>}
         </div>
       )}
       <div className={`patient-field-grid${props.patientMode === 'child' ? ' has-age' : ''}`}>
@@ -132,11 +129,11 @@ export function PatientSizePanel(props: Props) {
         </div>
       </div>
       <div className="bsa-readout">
-        <div><span>Patient BSA</span><strong>{effectiveBsa ? `${formatNumber(effectiveBsa, 2)} m²` : '—'}</strong>{bsaSource && <small>{bsaSource}</small>}</div>
-        <div><span>Reference BSA</span><strong>{formatNumber(props.referenceBsa, 2)} m²</strong></div>
+        <div><span>Measured BSA</span><strong>{calculatedBsa ? `${formatNumber(calculatedBsa, 2)} m²` : '—'}</strong>{calculatedBsa && <small>From height + weight</small>}</div>
+        <div><span>{props.patientMode === 'child' ? 'Age reference BSA' : 'Reference BSA'}</span><strong>{formatNumber(props.referenceBsa, 2)} m²</strong></div>
         <div><span>Adjustment ratio</span><strong>{ratio ? `${formatNumber(ratio, 3)}×` : '—'}</strong></div>
       </div>
-      <details className="inline-details"><summary>Advanced BSA settings</summary><label><span>Reference adult BSA</span><div className="unit-input narrow"><input type="number" min="0.1" step="0.01" value={props.referenceBsa} onChange={(event) => props.onReferenceBsaChange(Math.max(0.1, Number(event.target.value)))} /><span>m²</span></div></label></details>
+      {props.patientMode === 'adult' && <details className="inline-details"><summary>Advanced BSA settings</summary><label><span>Reference adult BSA</span><div className="unit-input narrow"><input type="number" min="0.1" step="0.01" value={props.adultReferenceBsa} onChange={(event) => props.onReferenceBsaChange(Math.max(0.1, Number(event.target.value)))} /><span>m²</span></div></label></details>}
     </section>
   );
 }

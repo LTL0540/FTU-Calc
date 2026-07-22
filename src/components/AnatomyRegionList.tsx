@@ -1,14 +1,19 @@
 import { Fragment } from 'react';
 import type { BodyRegion } from '../types/calculator';
 import { formatNumber } from '../lib/unitConversions';
+import type { PatientMode } from '../types/calculator';
+import type { PediatricFtuReference } from '../data/pediatricFtu';
+import { pediatricRegionFtu } from '../data/pediatricFtu';
 
 type Props = {
   regions: BodyRegion[];
   onChange: (id: string, fraction: number) => void;
   onClear: () => void;
+  patientMode?: PatientMode;
+  pediatricFtuReference?: PediatricFtuReference;
 };
 
-export function AnatomyRegionList({ regions, onChange, onClear }: Props) {
+export function AnatomyRegionList({ regions, onChange, onClear, patientMode = 'adult', pediatricFtuReference }: Props) {
   return (
     <div className="region-list-shell">
       <div className="list-headline">
@@ -37,7 +42,9 @@ export function AnatomyRegionList({ regions, onChange, onClear }: Props) {
                         <span>{region.label}</span>
                       </label>
                     </td>
-                    <td>{formatNumber(region.adultHandprints)} HP</td>
+                    <td>{patientMode === 'child' && pediatricFtuReference
+                      ? `${formatNumber(pediatricRegionFtu(region.id, pediatricFtuReference), 2)} FTU`
+                      : `${formatNumber(region.adultHandprints / 2, 2)} FTU`}</td>
                     <td>
                       <div className="percent-input">
                         <input

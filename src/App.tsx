@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, CheckCircle2, Clipboard, HelpCircle, RotateCcw } from 'lucide-react';
+import { BookOpen, Check, CheckCircle2, Clipboard, ExternalLink, HelpCircle, RotateCcw } from 'lucide-react';
 import { AnatomyPainter } from './components/AnatomyPainter';
+import { AnatomyRegionList } from './components/AnatomyRegionList';
 import { PatientSizePanel } from './components/PatientSizePanel';
 import { RegimenPanel } from './components/RegimenPanel';
 import { PackageSelector } from './components/PackageSelector';
@@ -10,11 +11,13 @@ import { ReferencePanel } from './components/ReferencePanel';
 import { BODY_REGION_REFERENCE_NOTE, createBodyRegions } from './data/bodyRegions';
 import { createPackageSizes } from './data/packageSizes';
 import { PROTOCOL_PRESETS } from './data/protocolPresets';
-import { ADULT_FTU_REFERENCE_GROUPS, CLINICAL_REFERENCE_LINKS } from './data/clinicalReferences';
+import { CLINICAL_REFERENCE_LINKS } from './data/clinicalReferences';
+import { pediatricFtuReferenceFor, selectedPediatricFtu } from './data/pediatricFtu';
 import type { CalculatorResult, DisplayUnit, DurationUnit, Formulation, FrequencyId, PatientMode, PediatricStage, ProtocolPreset } from './types/calculator';
 import { CLINICAL_CONSTANTS, getPediatricBsaFallback, pediatricStageForAge } from './config/clinical';
 import { calculateMostellerBsa } from './lib/bsa';
 import { calculateFtu } from './lib/ftuCalculations';
+import { anatomicalBsaPercent } from './lib/anatomicalBsa';
 import { FREQUENCIES, getSchedule } from './lib/schedule';
 import { quantityWarnings, validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
@@ -37,7 +40,7 @@ function MobileResultsDrawer({ result, displayUnit, onDisplayUnitChange, summary
   return <details className="mobile-result-drawer">
     <summary>
       <span><small>Suggested dispense</small><strong>{quantity(result.suggestedDispensedGrams, true)}</strong></span>
-      <span><small>Exact need</small><strong>{quantity(result.finalRequiredGrams)}</strong></span>
+      <span><small>Calculated need</small><strong>{quantity(result.finalRequiredGrams)}</strong></span>
     </summary>
     <div className="mobile-result-content">
       <div className="segmented compact-toggle" role="group" aria-label="Display units">
@@ -47,7 +50,7 @@ function MobileResultsDrawer({ result, displayUnit, onDisplayUnitChange, summary
       </div>
       <div className="mobile-result-metrics">
         <div><span>Per application</span><strong>{quantity(result.formulationAdjustedGramsPerApplication)}</strong><small>{formatNumber(result.ftuPerApplication, 2)} FTU</small></div>
-        <div><span>Exact requirement</span><strong>{quantity(result.finalRequiredGrams)}</strong><small>{formatNumber(result.totalApplications, 2)} applications</small></div>
+        <div><span>Calculated need</span><strong>{quantity(result.finalRequiredGrams)}</strong><small>{formatNumber(result.totalApplications, 2)} applications</small></div>
       </div>
       <button type="button" className="mobile-copy-button" onClick={copy}>{copied ? <Check size={15} /> : <Clipboard size={15} />}{copied ? 'Copied' : 'Copy summary'}</button>
     </div>
@@ -79,37 +82,52 @@ export default function App() {
   const [allowancePercent, setAllowancePercent] = useState(0);
   const [packageSizes, setPackageSizes] = useState(createPackageSizes);
 
-  const regionHandprints = useMemo(() => regions.reduce((sum, region) => sum + region.adultHandprints * region.selectedFraction, 0), [regions]);
-  const selectedHandprints = handprintOverrideEnabled ? quickHandprints : regionHandprints;
   const calculatedBsa = calculateMostellerBsa(heightCm, weightKg);
   const enteredAge = age.trim() === '' ? undefined : Number(age);
   const pediatricBsaDefault = patientMode === 'child'
     ? getPediatricBsaFallback(pediatricStage, Number.isFinite(enteredAge) ? enteredAge : undefined)
     : undefined;
-  const effectiveBsa = calculatedBsa ?? pediatricBsaDefault?.bsa;
-  const usingPediatricBsaDefault = patientMode === 'child' && calculatedBsa === undefined;
+  const pediatricReferenceAge = Number.isFinite(enteredAge)
+    ? Math.max(0, Math.min(10, enteredAge!))
+    : pediatricStage === 'infant' ? 1 : pediatricStage === 'younger' ? 4 : 8;
+  const pediatricFtuReference = pediatricFtuReferenceFor(pediatricStage, Number.isFinite(enteredAge) ? enteredAge : undefined);
+  const pediatricAdjustmentReference = pediatricFtuReference.id === 'adult'
+    ? { bsa: referenceBsa, assumedAge: 'adult reference', ageRange: 'over 10 yr', isAgeSpecific: true }
+    : pediatricBsaDefault;
+  const adultRegionFtu = useMemo(() => regions.reduce((sum, region) => sum + (region.adultHandprints / 2) * region.selectedFraction, 0), [regions]);
+  const regionFtu = patientMode === 'child' ? selectedPediatricFtu(regions, pediatricFtuReference) : adultRegionFtu;
+  const selectedFtu = handprintOverrideEnabled ? quickHandprints / 2 : regionFtu;
+  const selectedHandprints = handprintOverrideEnabled ? quickHandprints : selectedFtu * 2;
+  const selectedBsaPercent = handprintOverrideEnabled
+    ? quickHandprints * CLINICAL_CONSTANTS.bsaPercentPerHandprint
+    : anatomicalBsaPercent(regions, patientMode === 'child' && pediatricFtuReference.id === 'adult' ? 'adult' : patientMode, pediatricReferenceAge);
+  const modelBsa = calculatedBsa ?? pediatricAdjustmentReference?.bsa;
+  const calculationReferenceBsa = patientMode === 'child' ? (pediatricAdjustmentReference?.bsa ?? referenceBsa) : referenceBsa;
 
   useEffect(() => {
-    setApplyBsa(Boolean(effectiveBsa && effectiveBsa > 0));
-  }, [effectiveBsa]);
+    setApplyBsa(Boolean(calculatedBsa && calculatedBsa > 0));
+  }, [calculatedBsa]);
   const schedule = getSchedule(frequency, customApplications, durationValue, durationUnit);
   const enabledPackageSizes = packageSizes.filter((item) => item.enabled).map((item) => item.grams);
   const inputs = useMemo(() => ({
     selectedHandprints,
+    selectedFtu,
+    selectedBsaPercent,
     formulation,
     formulationFactor,
     applyFormulationFactor,
     heightCm,
     weightKg,
-    patientBsa: effectiveBsa,
-    referenceBsa,
+    patientBsa: calculatedBsa,
+    referenceBsa: calculationReferenceBsa,
     applyBsaAdjustment: applyBsa,
     applicationsPerDay: schedule.applicationsPerDay,
     applicationsPerWeek: schedule.applicationsPerWeek,
+    totalApplications: schedule.totalApplications,
     durationDays: schedule.durationDays,
     allowancePercent,
     enabledPackageSizes,
-  }), [selectedHandprints, formulation, formulationFactor, applyFormulationFactor, heightCm, weightKg, effectiveBsa, referenceBsa, applyBsa, schedule.applicationsPerDay, schedule.applicationsPerWeek, schedule.durationDays, allowancePercent, enabledPackageSizes.join('|')]);
+  }), [selectedHandprints, selectedFtu, selectedBsaPercent, formulation, formulationFactor, applyFormulationFactor, heightCm, weightKg, calculatedBsa, calculationReferenceBsa, applyBsa, schedule.applicationsPerDay, schedule.applicationsPerWeek, schedule.totalApplications, schedule.durationDays, allowancePercent, enabledPackageSizes.join('|')]);
   const result = useMemo(() => calculateFtu(inputs), [inputs]);
   const warnings = [...validateInputs(inputs), ...quantityWarnings(result.finalRequiredGrams)];
 
@@ -153,14 +171,16 @@ export default function App() {
   const patientSizeProps = {
     patientMode,
     pediatricStage,
-    pediatricBsaDefault,
+    pediatricBsaDefault: pediatricAdjustmentReference,
+    pediatricFtuReference,
     age,
     heightCm,
     weightKg,
-    referenceBsa,
+    referenceBsa: calculationReferenceBsa,
+    adultReferenceBsa: referenceBsa,
     applyBsa,
     onPatientModeChange: setPatientMode,
-    onPediatricStageChange: setPediatricStage,
+    onPediatricStageChange: (stage: PediatricStage) => { setPediatricStage(stage); setAge(''); },
     onAgeChange: updateAge,
     onHeightChange: setHeightCm,
     onWeightChange: setWeightKg,
@@ -201,7 +221,6 @@ export default function App() {
     setRegions(createBodyRegions());
     setHandprintOverrideEnabled(false);
     setActivePresetIds([]);
-    setPainterClearSignal((current) => current + 1);
   };
 
   const reset = () => {
@@ -246,7 +265,7 @@ export default function App() {
         <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><h1 className="sr-only">QuantiDerm topical quantity calculator</h1></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
-          <div className="header-estimate-exact"><span>Exact need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
+          <div className="header-estimate-exact"><span>Calculated need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
           <div className="segmented compact-toggle header-unit-toggle" role="group" aria-label="Display units">
             <button className={displayUnit === 'g' ? 'active' : ''} onClick={() => setDisplayUnit('g')} aria-pressed={displayUnit === 'g'}>Grams</button>
             <button className={displayUnit === 'oz' ? 'active' : ''} onClick={() => setDisplayUnit('oz')} aria-pressed={displayUnit === 'oz'}>Ounces</button>
@@ -263,11 +282,14 @@ export default function App() {
           <section className="card area-card" id="area-section">
             <div className="area-heading">
               <div><span className="step-label">01 · Treatment area</span><h2>Where will it be applied?</h2><p>Select entire regions or estimate the affected portion.</p></div>
-              <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(selectedHandprints, 2)} <small>handprints</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
+              <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(result.ftuPerApplication, 2)} <small>FTU</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
             </div>
-            <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} modelBsa={effectiveBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
-            <p className="reference-note"><CheckCircle2 size={15} /> {BODY_REGION_REFERENCE_NOTE}</p>
+            <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} pediatricFtuReference={pediatricFtuReference} heightCm={heightCm} weightKg={weightKg} modelBsa={modelBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <details className="text-region-entry"><summary>Text-based region entry</summary><AnatomyRegionList regions={regions} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} onChange={updateRegion} onClear={() => { clearPaintedArea(); setPainterClearSignal((current) => current + 1); }} /></details>
+            <p className="reference-note"><CheckCircle2 size={15} /> {patientMode === 'child'
+              ? `Child quantities use the ${pediatricFtuReference.label} regional FTU table. Scalp and genital values are proportional estimates because those surfaces are not listed separately in the pediatric table.`
+              : BODY_REGION_REFERENCE_NOTE}</p>
           </section>
         </div>
 
@@ -277,7 +299,7 @@ export default function App() {
             <PatientSizePanel {...patientSizeProps} />
           </div>
           <div className="workflow-right">
-            <ResultsPanel result={result} displayUnit={displayUnit} regions={handprintOverrideEnabled ? [] : regions} selectedHandprints={selectedHandprints} areaDescription={areaDescription} activePresetLabels={activePresetLabels} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} effectiveBsa={effectiveBsa} applyBsa={applyBsa} frequencyLabel={frequencyLabel} durationLabel={durationLabel} allowancePercent={allowancePercent} warnings={warnings} usingPediatricBsaDefault={usingPediatricBsaDefault} pediatricBsaDefault={pediatricBsaDefault} />
+            <ResultsPanel result={result} displayUnit={displayUnit} regions={handprintOverrideEnabled ? [] : regions} selectedHandprints={selectedHandprints} areaDescription={areaDescription} activePresetLabels={activePresetLabels} patientMode={patientMode} pediatricStage={pediatricStage} heightCm={heightCm} weightKg={weightKg} effectiveBsa={calculatedBsa} applyBsa={applyBsa} frequencyLabel={frequencyLabel} durationLabel={durationLabel} allowancePercent={allowancePercent} warnings={warnings} pediatricFtuReference={pediatricFtuReference} />
             <HandprintOverride enabled={handprintOverrideEnabled} handprints={quickHandprints} onChange={(value) => { setQuickHandprints(value); setHandprintOverrideEnabled(true); setActivePresetIds([]); }} onClear={() => setHandprintOverrideEnabled(false)} />
             <PackageSelector packages={packageSizes} onChange={setPackageSizes} />
           </div>
@@ -290,16 +312,26 @@ export default function App() {
           <summary><span><HelpCircle size={20} /> Methodology &amp; help</span><small>FTUs, handprints, adjustments, and rounding</small></summary>
           <div className="method-grid">
             <article><h3>What is an FTU?</h3><p>One fingertip unit is a line of topical medication expressed from a standard 5 mm nozzle, from the distal index-finger joint to the fingertip. The commonly used convention is 1 FTU = 0.5 g, covering two adult handprints.</p></article>
-            <article><h3>What is a handprint?</h3><p>The palmar surface of an adult hand and fingers is approximately 0.8% BSA and requires about 0.25 g per application. The digital body model uses standardized adult region proportions, so its output is an estimate.</p></article>
-            <article><h3>How are grams calculated?</h3><p>Selected handprint equivalents × 0.25 g gives the base amount per application. An optional BSA adjustment is applied before multiplying by the exact number of applications.</p></article>
-            <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. When a child’s measurements are unavailable, the estimate uses representative age-based BSA anchors and scales between them; entering an age refines the fallback. Measured height and weight take priority. Patient BSA is divided by the configurable 1.73 m² adult reference.</p></article>
+            <article><h3>What is a handprint?</h3><p>The palmar surface of an adult hand and fingers averages about 0.8% BSA. Handprint entry is a quick area estimate; the anatomical painter uses body-region surface proportions, so the two measures are not forced to be identical.</p></article>
+            <article><h3>How are grams calculated?</h3><p>FTUs per application × 0.5 g gives the estimated amount per application. Adult regions use the standard regional FTU table. Child regions use age-band, body-region FTUs expressed with an adult finger.</p></article>
+            <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. Pediatric regional FTUs provide the baseline child estimate. If measured height and weight are entered, the optional size adjustment compares measured BSA with the representative BSA for the selected pediatric age—not with an adult baseline.</p></article>
             <article><h3>Why round up?</h3><p>A dispensing recommendation must cover the mathematical requirement. One package or matching package sizes are preferred within a practical excess allowance: 20% of need, with a 20 g floor and 30 g cap. Otherwise the recommendation minimizes excess and then container count. Actual use may vary with thickness, body site, hair, dressings, skin surface, and adherence.</p></article>
-            <article className="reference-basis"><h3>Adult regional reference basis</h3><p>Practical values use the rounded consensus totals: {ADULT_FTU_REFERENCE_GROUPS.map((item) => `${item.label} ${item.ftu} FTU`).join('; ')}. Painter subdivisions are approximate, but each combined surface sums to its cited total. The 0.5 g/FTU convention is retained as a conservative standard estimate.</p><ul>{CLINICAL_REFERENCE_LINKS.map((reference) => <li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label}</a><span>{reference.note}</span></li>)}</ul></article>
           </div>
         </details>
+        <nav className="clinical-basis" aria-label="Clinical source material">
+          <span className="clinical-basis-label"><BookOpen size={15} /> Clinical basis</span>
+          <div className="clinical-basis-links">
+            {CLINICAL_REFERENCE_LINKS.map((reference) => (
+              <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" title={reference.note}>
+                <span>{reference.label}<small>{reference.topic}</small></span>
+                <ExternalLink size={12} aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        </nav>
       </section>
 
-      <footer><p>This calculator provides an estimate based on fingertip-unit and handprint methods. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Verify the prescribed regimen and available package sizes before dispensing.</p><span>a LokTin Labs tool</span></footer>
+      <footer><p>This calculator provides an estimate based on fingertip-unit and handprint methods. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Verify the prescribed regimen and available package sizes before dispensing.</p><span>QuantiDerm 1.1 · clinical references reviewed July 2026 · a LokTin Labs tool</span></footer>
 
       <MobileResultsDrawer result={result} displayUnit={displayUnit} onDisplayUnitChange={setDisplayUnit} summary={mobileSummary} />
     </div>

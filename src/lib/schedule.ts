@@ -29,8 +29,13 @@ export function getSchedule(
   const durationDays = durationToDays(durationValue, durationUnit, daysPerMonth);
   const applicationsPerWeek = frequency === 'custom-week' ? customApplications : definition.perWeek;
   const applicationsPerDay = frequency === 'custom-day' ? customApplications : definition.perDay;
-  const totalApplications = applicationsPerWeek !== undefined
+  const rawApplications = applicationsPerWeek !== undefined
     ? applicationsPerWeek * (durationDays / 7)
     : (applicationsPerDay ?? 0) * durationDays;
+  // Weekly and alternate-day schedules represent discrete administrations;
+  // round a partial final interval up so the estimate does not under-supply it.
+  const totalApplications = applicationsPerWeek !== undefined || frequency === 'alternate'
+    ? Math.ceil(rawApplications - Number.EPSILON)
+    : rawApplications;
   return { durationDays, applicationsPerDay, applicationsPerWeek, totalApplications };
 }

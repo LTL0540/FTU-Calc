@@ -79,4 +79,11 @@ describe('FTU clinical calculations', () => {
     }));
     expect(result.exactTreatmentGrams).toBe(35);
   });
+
+  it('accepts independent regional FTU and anatomical BSA estimates', () => {
+    const result = calculateFtu(baseInputs({ selectedHandprints: 4, selectedFtu: 1.5, selectedBsaPercent: 7.2 }));
+    expect(result.ftuPerApplication).toBe(1.5);
+    expect(result.baseGramsPerApplication).toBe(0.75);
+    expect(result.approximateBsaPercent).toBe(7.2);
+  });
 });

@@ -12,18 +12,51 @@ export const ADULT_FTU_REFERENCE_GROUPS = [
 
 export const CLINICAL_REFERENCE_LINKS = [
   {
-    label: 'Long & Finlay (1991), original FTU study',
-    url: 'https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2230.1991.tb01232.x',
-    note: 'Measured adult means: front trunk 6.7 FTU, back 6.8, arm/forearm 3.3, hand 1.2, leg/thigh 5.8, and foot 1.8.',
+    label: 'Long & Finlay · 1991',
+    topic: 'FTU origin',
+    url: 'https://doi.org/10.1111/j.1365-2230.1991.tb01232.x',
+    note: 'The original fingertip-unit study: a line expressed from a standard 5 mm nozzle, with measured adult regional quantities.',
   },
   {
-    label: 'NHS Shropshire, Telford and Wrekin (2025)',
+    label: 'Amirsheybani et al. · 2001',
+    topic: 'Hand area',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/11304598/',
+    note: 'Measured 800 participants and found the adult palmar surface of the hand and fingers averaged 0.78% of body surface area.',
+  },
+  {
+    label: 'NHS STW · 2025',
+    topic: 'Regional FTUs',
     url: 'https://www.shropshiretelfordandwrekin.nhs.uk/wp-content/uploads/Good-Practice-Guidance-Administration-of-Topical-Preparations-in-Care-Settings-002.pdf',
-    note: 'Practical rounded adult table, including back with buttocks, scalp, genitalia, and an approximately 40-FTU whole-body check.',
+    note: 'Current clinical guidance supporting the 0.5 g adult FTU convention and the rounded adult body-region FTU table.',
   },
   {
-    label: 'DermNet fingertip-unit guide (reviewed 2023)',
+    label: 'DermNet · reviewed 2023',
+    topic: 'Weight & coverage',
     url: 'https://dermnetnz.org/topics/fingertip-unit',
-    note: 'Independent clinical reference agreeing on 2.5/3/1/6/2 regional values and 14 FTU for front plus back of trunk.',
+    note: 'Dermatologist-reviewed guidance supporting 0.5 g per adult male FTU and the commonly used regional quantities.',
+  },
+  {
+    label: 'Newcastle Hospitals NHS',
+    topic: 'Two-hand coverage',
+    url: 'https://www.newcastle-hospitals.nhs.uk/services/dermatology/patient-dermatology-information-leaflets/eczema/',
+    note: 'Patient guidance describing one fingertip unit as sufficient for an area equal to two adult handprints.',
+  },
+  {
+    label: 'Leeds Teaching Hospitals NHS',
+    topic: 'Pediatric regional FTUs',
+    url: 'https://www.leedsth.nhs.uk/patients/resources/management-of-atopic-eczema-a-parents-guide/',
+    note: 'Age- and body-region-specific pediatric FTU table, citing Long C, A Guide to Finger Tip Units for Children (British Journal of Dermatology, 1998).',
+  },
+  {
+    label: 'Dudley Group NHS',
+    topic: 'Pediatric FTU table',
+    url: 'https://www.dgft.nhs.uk/pil/treatments-used-in-eczema/',
+    note: 'Independent NHS publication of the same pediatric age-band FTU quantities for face and neck, limbs, and trunk.',
+  },
+  {
+    label: 'Australian enHealth / ICRP',
+    topic: 'Age-specific body proportions',
+    url: 'https://www.cdc.gov.au/system/files/2025-10/enhealth-guidance-australian-exposure-factor-guide_0.pdf',
+    note: 'Reference BSA anchors and age-specific head, trunk, upper-extremity, and lower-extremity surface-area proportions used for painter coverage estimates.',
   },
 ] as const;

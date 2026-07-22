@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, Clipboard, TriangleAlert } from 'lucide-react';
 import type { BodyRegion, CalculatorResult, DisplayUnit, PatientMode, PediatricStage } from '../types/calculator';
+import type { PediatricFtuReference } from '../data/pediatricFtu';
 import { formatGrams, formatNumber, formatOunces } from '../lib/unitConversions';
 
 type Props = {
@@ -20,8 +21,7 @@ type Props = {
   durationLabel: string;
   allowancePercent: number;
   warnings: string[];
-  usingPediatricBsaDefault: boolean;
-  pediatricBsaDefault?: { bsa: number; assumedAge: string; ageRange: string };
+  pediatricFtuReference?: PediatricFtuReference;
 };
 
 const packageText = (packages: number[]) => packages.length ? packages.map((value) => `${formatNumber(value, 1)} g`).join(' + ') : 'No package configured';
@@ -36,10 +36,10 @@ export function ResultsPanel(props: Props) {
     if (props.displayUnit === 'oz') return formatOunces(grams);
     return `${g} / ${formatOunces(grams)}`;
   };
-  const bsaAssumption = props.usingPediatricBsaDefault && props.pediatricBsaDefault && props.applyBsa
-    ? ` Size adjustment uses the ${props.pediatricBsaDefault.assumedAge} BSA assumption of ${formatNumber(props.pediatricBsaDefault.bsa, 2)} m².`
+  const pediatricBasis = props.patientMode === 'child' && props.pediatricFtuReference
+    ? ` Pediatric regional reference: ${props.pediatricFtuReference.label}.`
     : '';
-  const summary = useMemo(() => `Apply to ${props.areaDescription} ${props.frequencyLabel.toLowerCase()} for ${props.durationLabel}. Estimated amount per application: ${formatNumber(props.result.ftuPerApplication, 2)} FTU (${formatNumber(props.result.formulationAdjustedGramsPerApplication, 2)} g). Estimated treatment requirement: ${formatNumber(props.result.finalRequiredGrams, 2)} g. Suggested quantity to dispense: ${displayedPackageText}.${bsaAssumption}`, [props.areaDescription, props.durationLabel, props.frequencyLabel, props.result, displayedPackageText, bsaAssumption]);
+  const summary = useMemo(() => `Apply to ${props.areaDescription} ${props.frequencyLabel.toLowerCase()} for ${props.durationLabel}. Estimated amount per application: ${formatNumber(props.result.ftuPerApplication, 2)} FTU (${formatNumber(props.result.formulationAdjustedGramsPerApplication, 2)} g). Estimated treatment requirement: ${formatNumber(props.result.finalRequiredGrams, 2)} g. Suggested quantity to dispense: ${displayedPackageText}.${pediatricBasis}`, [props.areaDescription, props.durationLabel, props.frequencyLabel, props.result, displayedPackageText, pediatricBasis]);
   const copy = async () => {
     await navigator.clipboard.writeText(summary);
     setCopied(true);
@@ -62,8 +62,8 @@ export function ResultsPanel(props: Props) {
         </div>
         <div className="result-metrics">
           <div><span>Per application</span><strong>{quantity(props.result.formulationAdjustedGramsPerApplication)}</strong><small>{formatNumber(props.result.ftuPerApplication, 2)} FTU</small></div>
-          <div><span>Exact requirement</span><strong>{quantity(props.result.finalRequiredGrams)}</strong><small>{formatNumber(props.result.totalApplications, 2)} applications</small></div>
-          <div><span>Estimated area</span><strong>{formatNumber(props.result.approximateBsaPercent, 2)}% BSA</strong><small>{formatNumber(props.selectedHandprints, 2)} handprints</small></div>
+          <div><span>Calculated need</span><strong>{quantity(props.result.finalRequiredGrams)}</strong><small>{formatNumber(props.result.totalApplications, 2)} applications</small></div>
+          <div><span>Estimated area</span><strong>{formatNumber(props.result.approximateBsaPercent, 2)}% BSA</strong><small>{formatNumber(props.selectedHandprints, 2)} adult HP eq.</small></div>
         </div>
         {props.warnings.length > 0 && (
           <div className="warning-stack">
@@ -77,9 +77,10 @@ export function ResultsPanel(props: Props) {
         <details className="calculation-details">
           <summary>Calculation details</summary>
           <div className="calculation-steps">
-            <div><span>Selected area</span><strong>{formatNumber(props.selectedHandprints, 2)} handprints</strong></div>
+            <div><span>Selected area</span><strong>{formatNumber(props.result.approximateBsaPercent, 2)}% BSA · {formatNumber(props.selectedHandprints, 2)} adult handprint equivalents</strong></div>
             {props.activePresetLabels.length > 0 && <div><span>Combined preset surfaces</span><strong>{props.activePresetLabels.join('; ')}</strong></div>}
-            <div><span>Base amount per application</span><strong>{formatNumber(props.selectedHandprints, 2)} × 0.25 g = {formatGrams(props.result.baseGramsPerApplication)}</strong></div>
+            {props.patientMode === 'child' && props.pediatricFtuReference && <div><span>Pediatric regional reference</span><strong>{props.pediatricFtuReference.label}</strong></div>}
+            <div><span>Base amount per application</span><strong>{formatNumber(props.result.ftuPerApplication, 2)} FTU × 0.5 g = {formatGrams(props.result.baseGramsPerApplication)}</strong></div>
             <div><span>BSA adjustment</span><strong>{props.applyBsa ? `${formatGrams(props.result.baseGramsPerApplication)} × ${formatNumber(props.result.bsaRatio, 3)} = ${formatGrams(props.result.sizeAdjustedGramsPerApplication)}` : 'Not applied (1.00×)'}</strong></div>
             <div><span>Applications</span><strong>{formatNumber(props.result.totalApplications, 2)}</strong></div>
             <div><span>Estimated treatment quantity</span><strong>{formatGrams(props.result.exactTreatmentGrams)}</strong></div>
@@ -93,7 +94,7 @@ export function ResultsPanel(props: Props) {
             <h3>Area</h3>
             {props.activePresetLabels.length > 0 && <p><strong>Combined presets:</strong> {props.activePresetLabels.join('; ')}</p>}
             {selectedRegions.length ? <ul>{selectedRegions.map((region) => <li key={region.id}>{region.label}: {formatNumber(region.selectedFraction * 100, 0)}%</li>)}</ul> : <p>{props.areaDescription}</p>}
-            <dl><div><dt>Handprints</dt><dd>{formatNumber(props.selectedHandprints, 2)}</dd></div><div><dt>Approx. treated BSA</dt><dd>{formatNumber(props.result.approximateBsaPercent, 2)}%</dd></div><div><dt>FTU / application</dt><dd>{formatNumber(props.result.ftuPerApplication, 2)}</dd></div></dl>
+            <dl><div><dt>Adult handprint equivalents</dt><dd>{formatNumber(props.selectedHandprints, 2)}</dd></div><div><dt>Approx. treated BSA</dt><dd>{formatNumber(props.result.approximateBsaPercent, 2)}%</dd></div><div><dt>FTU / application</dt><dd>{formatNumber(props.result.ftuPerApplication, 2)}</dd></div></dl>
             <h3>Patient adjustment</h3>
             <dl><div><dt>Model</dt><dd>{modelLabel}</dd></div><div><dt>Height / weight</dt><dd>{props.heightCm ? `${formatNumber(props.heightCm, 1)} cm` : '—'} / {props.weightKg ? `${formatNumber(props.weightKg, 1)} kg` : '—'}</dd></div><div><dt>BSA</dt><dd>{props.effectiveBsa ? `${formatNumber(props.effectiveBsa, 2)} m²` : '—'}</dd></div><div><dt>Adjustment</dt><dd>{props.applyBsa ? `${formatNumber(props.result.bsaRatio, 3)}×` : 'Off'}</dd></div></dl>
             <h3>Regimen</h3>
