@@ -319,7 +319,7 @@ export default function App() {
           </div>
         </details>
         <nav className="clinical-basis" aria-label="Clinical source material">
-          <span className="clinical-basis-label"><BookOpen size={15} /> Clinical basis</span>
+          <span className="clinical-basis-label"><BookOpen size={15} /> Resources</span>
           <div className="clinical-basis-links">
             {CLINICAL_REFERENCE_LINKS.map((reference) => (
               <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" title={reference.note}>

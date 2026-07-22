@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Brush, CalendarDays, Eraser, MousePointer2, RotateCcw, SlidersHorizontal, Undo2 } from 'lucide-react';
+import { Brush, CalendarDays, Eraser, PaintBucket, RotateCcw, SlidersHorizontal, Undo2 } from 'lucide-react';
 import type { BodyRegion, BodyView, PatientMode, PediatricStage } from '../types/calculator';
 import { CLINICAL_CONSTANTS } from '../config/clinical';
 import { calculateBodyMorph, type BodyMorph } from '../lib/bodyMorph';
@@ -547,7 +547,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
   };
 
   return (
-    <div className="painter-shell">
+    <div className={`painter-shell tool-${tool}`}>
       <div className="tool-row" role="toolbar" aria-label="Anatomy selection tools">
         <button type="button" className={`mobile-workflow-button${mobileDrawer === 'size' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'}>
           <SlidersHorizontal size={17} /> Patient size
@@ -560,13 +560,13 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
         </button>
         <label className={`mirror-toggle${mirrorFrontBack ? ' active' : ''}`} title="Apply paint, erase, and whole-region actions to the corresponding front and back surfaces">
           <input type="checkbox" checked={mirrorFrontBack} onChange={(event) => onMirrorFrontBackChange(event.target.checked)} />
-          <span>Mirror both sides</span>
+          <span>{mirrorFrontBack ? 'Painting both sides' : 'Mirror both sides'}</span>
         </label>
         <button className={tool === 'erase' ? 'tool active' : 'tool'} onClick={() => setTool('erase')} aria-pressed={tool === 'erase'}>
           <Eraser size={17} /> Erase
         </button>
         <button className={tool === 'whole' ? 'tool active' : 'tool'} onClick={() => setTool('whole')} aria-pressed={tool === 'whole'}>
-          <MousePointer2 size={17} /> Whole region
+          <PaintBucket size={17} /> Whole region
         </button>
         <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} title="Undo the last painter change"><Undo2 size={17} /> Undo</button>
         <button className="tool clear-tool" onClick={clearWithUndo}><RotateCcw size={17} /> Clear</button>
