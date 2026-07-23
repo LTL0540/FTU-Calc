@@ -562,13 +562,13 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
           <input type="checkbox" checked={mirrorFrontBack} onChange={(event) => onMirrorFrontBackChange(event.target.checked)} />
           <span>{mirrorFrontBack ? 'Painting both sides' : 'Mirror both sides'}</span>
         </label>
-        <button className={tool === 'erase' ? 'tool active' : 'tool'} onClick={() => setTool('erase')} aria-pressed={tool === 'erase'}>
-          <Eraser size={17} /> Erase
-        </button>
+        <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} title="Undo the last painter change"><Undo2 size={17} /> Undo</button>
         <button className={tool === 'whole' ? 'tool active' : 'tool'} onClick={() => setTool('whole')} aria-pressed={tool === 'whole'}>
           <PaintBucket size={17} /> Whole region
         </button>
-        <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} title="Undo the last painter change"><Undo2 size={17} /> Undo</button>
+        <button className={tool === 'erase' ? 'tool active' : 'tool'} onClick={() => setTool('erase')} aria-pressed={tool === 'erase'}>
+          <Eraser size={17} /> Erase
+        </button>
         <button className="tool clear-tool" onClick={clearWithUndo}><RotateCcw size={17} /> Clear</button>
       </div>
       <p className="microcopy" aria-live="polite">
