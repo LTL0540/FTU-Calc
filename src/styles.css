@@ -200,6 +200,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .factor-field input { min-height: 38px; }
 .factor-field small { text-align: right; }
 .footnote { color: #74827f; font-size: 9.5px; margin: 12px 0 0; }
+.patient-panel { container-type: inline-size; }
 .patient-panel.child-emphasis { border-color: #9dcfc4; box-shadow: 0 10px 30px rgba(20,104,97,.1), 0 0 0 2px rgba(20,104,97,.04); }
 .pediatric-stage-control { margin: -2px 0 10px; padding: 9px 10px; border: 1px solid #d7e7e2; background: #f6faf8; border-radius: 11px; }
 .pediatric-stage-control > span { display: block; margin-bottom: 6px; color: #526b66; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
@@ -218,7 +219,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .measurement-row > .unit-input { flex: 1; }
 .or-label { color: #8a9794; font-size: 9px; }
 .patient-field-grid { display: grid; grid-template-columns: 1fr; gap: 9px; }
-.patient-field-grid.has-age { grid-template-columns: 88px minmax(0, 1fr); align-items: end; }
+.patient-field-grid.has-age { grid-template-columns: minmax(96px, .55fr) minmax(280px, 1.45fr); align-items: end; }
 .patient-field-grid label { display: flex; flex-direction: column; gap: 5px; font-size: 10.5px; font-weight: 700; }
 .patient-field-grid label small { font-weight: 400; color: var(--muted); }
 .patient-field-grid .height-field { grid-column: 2; }
@@ -227,7 +228,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .patient-field-grid input, .patient-field-grid select { min-height: 38px; }
 .patient-field-grid .field-label { margin-bottom: 5px; font-size: 10.5px; }
 .patient-field-grid .measurement-row { gap: 5px; }
-.patient-field-grid .unit-input.compact { max-width: 64px; }
+.patient-field-grid .unit-input.compact { min-width: 68px; max-width: 78px; }
 .patient-field-grid .age-field input { padding-left: 10px; padding-right: 10px; }
 .measurement-input { font-variant-numeric: tabular-nums; }
 .measurement-input::-webkit-inner-spin-button, .measurement-input::-webkit-outer-spin-button { appearance: none; margin: 0; }
@@ -400,9 +401,15 @@ footer span { white-space: nowrap; color: #d7ebe6; font-size: 11px; font-weight:
   .quantity-updated::after { animation: none; }
 }
 
-@media (min-width: 1500px) {
-  .workspace { grid-template-columns: minmax(600px, 1.08fr) minmax(720px, .92fr); }
-  .controls-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; align-self: stretch; align-content: start; }
+@container (max-width: 450px) {
+  .patient-field-grid.has-age { grid-template-columns: 1fr; }
+  .patient-field-grid.has-age .age-field { width: min(150px, 100%); }
+  .patient-field-grid.has-age .height-field { grid-column: 1; }
+}
+
+@media (min-width: 1800px) {
+  .workspace { grid-template-columns: minmax(650px, 1.04fr) minmax(820px, .96fr); }
+  .controls-stack { grid-template-columns: repeat(2, minmax(400px, 1fr)); align-items: start; align-self: stretch; align-content: start; }
   .workflow-middle, .workflow-right { display: grid; gap: 18px; min-width: 0; align-content: start; position: sticky; top: 108px; }
   .workflow-middle { grid-column: 1; }
   .workflow-right { grid-column: 2; }

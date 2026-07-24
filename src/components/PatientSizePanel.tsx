@@ -134,7 +134,7 @@ export function PatientSizePanel(props: Props) {
       )}
       <div className={`patient-field-grid${props.patientMode === 'child' ? ' has-age' : ''}`}>
         {props.patientMode === 'child' && (
-          <label className="age-field"><span>Age <small>(years)</small></span><input aria-label="Age in years" type="number" inputMode="decimal" min="0" step="0.1" placeholder="e.g. 4" value={props.age} onChange={(event) => props.onAgeChange(event.target.value)} /></label>
+          <label className="age-field"><span>Age <small>(full years)</small></span><input aria-label="Age in full years" type="number" inputMode="numeric" min="0" step="1" placeholder="e.g. 4" value={props.age} onChange={(event) => { const next = event.target.value; if (next === '' || /^\d+$/.test(next)) props.onAgeChange(next); }} /></label>
         )}
         <div className="compound-field height-field">
           <div className="field-label"><span>Height</span><div className="mini-tabs"><span className="active">cm</span><span>ft / in</span></div></div>
