@@ -55,4 +55,10 @@ describe('package optimization', () => {
     const result = optimizePackages(98.01, [15, 30, 45, 60, 90, 100]);
     expect(result.totalGrams).toBeGreaterThanOrEqual(98.01);
   });
+
+  it('uses the largest enabled package to reduce container count for a large course', () => {
+    const result = optimizePackages(2184.36, [15, 30, 45, 60, 90, 100, 120, 240, 454]);
+    expect(result.totalGrams).toBe(2270);
+    expect(result.packages).toEqual([454, 454, 454, 454, 454]);
+  });
 });

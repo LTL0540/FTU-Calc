@@ -18,7 +18,7 @@ import { CLINICAL_CONSTANTS, getPediatricBsaFallback, pediatricStageForAge } fro
 import { assessPatientSize } from './lib/bsa';
 import { calculateFtu } from './lib/ftuCalculations';
 import { anatomicalBsaPercent } from './lib/anatomicalBsa';
-import { FREQUENCIES, getSchedule } from './lib/schedule';
+import { durationValueForUnitChange, FREQUENCIES, getSchedule } from './lib/schedule';
 import { validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import './styles.css';
@@ -154,7 +154,7 @@ export default function App() {
         ? formatAreaList(describedAreas)
         : `affected areas, including ${formatAreaList(describedAreas.slice(0, 3))}`;
   const frequencyLabel = FREQUENCIES.find((item) => item.id === frequency)?.label ?? frequency;
-  const durationLabel = `${formatNumber(durationValue, 2)} ${durationUnit}`;
+  const durationLabel = durationValue > 0 ? `${formatNumber(durationValue, 2)} ${durationUnit}` : 'an unspecified duration';
   const suggestedPackageLabel = result.suggestedPackages.length ? result.suggestedPackages.map((grams) => `${formatNumber(grams, 1)} g`).join(' + ') : 'No package configured';
   const displayQuantity = (grams: number, practical = false) => {
     const gramText = `${formatNumber(grams, practical ? 1 : 2)} g`;
@@ -176,6 +176,10 @@ export default function App() {
     setWeightKg(undefined);
     setApplyBsa(false);
     if (mode === 'child') setPediatricStage('younger');
+  };
+  const changeDurationUnit = (unit: DurationUnit) => {
+    setDurationValue(durationValueForUnitChange(durationValue, durationUnit, unit));
+    setDurationUnit(unit);
   };
 
   const patientSizeProps = {
@@ -208,7 +212,7 @@ export default function App() {
     onFrequencyChange: setFrequency,
     onCustomApplicationsChange: setCustomApplications,
     onDurationValueChange: setDurationValue,
-    onDurationUnitChange: setDurationUnit,
+    onDurationUnitChange: changeDurationUnit,
     onAllowanceChange: setAllowancePercent,
   };
   const mobileSummary = `Apply to ${areaDescription} ${frequencyLabel.toLowerCase()} for ${durationLabel}. Estimated amount per application: ${formatNumber(result.ftuPerApplication, 2)} FTU (${formatNumber(result.formulationAdjustedGramsPerApplication, 2)} g). Estimated treatment requirement: ${formatNumber(result.finalRequiredGrams, 2)} g. Suggested quantity to dispense: ${suggestedPackageLabel}.`;
@@ -325,7 +329,7 @@ export default function App() {
             <article><h3>What is a handprint?</h3><p>The palmar surface of an adult hand and fingers averages about 0.8% BSA. Handprint entry is a quick area estimate; the anatomical painter uses body-region surface proportions, so the two measures are not forced to be identical.</p></article>
             <article><h3>How are grams calculated?</h3><p>FTUs per application × 0.5 g gives the estimated amount per application. Adult regions use the standard regional FTU table. Child regions use age-band, body-region FTUs expressed with an adult finger.</p></article>
             <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. Pediatric regional FTUs provide the baseline child estimate. If measured height and weight are entered, the optional size adjustment compares measured BSA with the representative BSA for the selected pediatric age—not with an adult baseline.</p></article>
-            <article><h3>Why round up?</h3><p>A dispensing recommendation must cover the mathematical requirement. One package or matching package sizes are preferred within a practical excess allowance: 20% of need, with a 20 g floor and 30 g cap. Otherwise the recommendation minimizes excess and then container count. Actual use may vary with thickness, body site, hair, dressings, skin surface, and adherence.</p></article>
+            <article><h3>Why round up?</h3><p>A dispensing recommendation must cover the mathematical requirement. One package or matching package sizes are preferred when practical. For larger courses, fewer larger containers are preferred when their excess remains within 20% of need; otherwise the recommendation minimizes excess and then container count. Actual use may vary with thickness, body site, hair, dressings, skin surface, and adherence.</p></article>
           </div>
         </details>
         <nav className="clinical-basis" aria-label="Clinical source material">

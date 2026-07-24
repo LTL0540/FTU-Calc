@@ -7,7 +7,7 @@ export type PackageRecommendation = {
 /**
  * A single package, or repeated packages of one size, may be preferred when
  * its total excess stays within a practical allowance: 20% of the
- * requirement, with a 20 g floor and a 30 g cap.
+ * requirement, with a 20 g floor for small quantities.
  * Outside that practical allowance, the least-excess combination wins, with
  * fewer containers breaking ties. A same-size option never wins by adding
  * more containers than the least-excess option.
@@ -49,7 +49,7 @@ export function optimizePackages(requirementGrams: number, sizes: number[]): Pac
   }
 
   const smallestSingle = [...usable].reverse().find((size) => size >= requirementGrams);
-  const practicalExcessLimit = Math.min(30, Math.max(20, requirementGrams * 0.2));
+  const practicalExcessLimit = Math.max(20, requirementGrams * 0.2);
   if (smallestSingle !== undefined) {
     const single = { packages: [smallestSingle], totalGrams: smallestSingle, excessGrams: smallestSingle - requirementGrams };
     if (!bestCombination || bestCombination.packages.length === 1 || single.excessGrams <= practicalExcessLimit) return single;
@@ -65,11 +65,11 @@ export function optimizePackages(requirementGrams: number, sizes: number[]): Pac
         excessGrams: totalGrams - requirementGrams,
       };
     })
-    .sort((a, b) => a.excessGrams - b.excessGrams || a.packages.length - b.packages.length)[0];
+    .filter((candidate) => candidate.excessGrams <= practicalExcessLimit)
+    .sort((a, b) => a.packages.length - b.packages.length || a.excessGrams - b.excessGrams)[0];
 
   if (
     bestSameSize
-    && bestSameSize.excessGrams <= practicalExcessLimit
     && (!bestCombination || bestSameSize.packages.length <= bestCombination.packages.length)
   ) return bestSameSize;
 

@@ -18,6 +18,14 @@ export function durationToDays(value: number, unit: DurationUnit, daysPerMonth =
   return value;
 }
 
+export function durationValueForUnitChange(value: number, from: DurationUnit, to: DurationUnit): number {
+  if (from === to) return value;
+  if (to === 'months') return 0;
+  if (from === 'days' && to === 'weeks') return Math.max(1, Math.ceil(value / 7));
+  if (from === 'weeks' && to === 'days') return Math.max(1, Math.round(value * 7));
+  return to === 'weeks' ? 2 : 14;
+}
+
 export function getSchedule(
   frequency: FrequencyId,
   customApplications: number,
