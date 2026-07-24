@@ -1,4 +1,3 @@
-import { CLINICAL_CONSTANTS } from '../config/clinical';
 import type { CalculatorInputs } from '../types/calculator';
 
 export function validateInputs(inputs: CalculatorInputs): string[] {
@@ -13,10 +12,4 @@ export function validateInputs(inputs: CalculatorInputs): string[] {
   if (inputs.applyBsaAdjustment && (!inputs.patientBsa || inputs.patientBsa <= 0)) warnings.push('BSA adjustment is enabled, but valid height and weight are missing.');
   if (inputs.applyFormulationFactor && inputs.formulationFactor <= 0) warnings.push('Formulation adjustment factor must be greater than zero.');
   return warnings;
-}
-
-export function quantityWarnings(finalGrams: number): string[] {
-  return finalGrams > CLINICAL_CONSTANTS.largeQuantityWarningGrams
-    ? ['This is a very large estimated quantity. Verify the selected area, frequency, duration, and adjustment settings.']
-    : [];
 }

@@ -8,7 +8,6 @@ export const CLINICAL_CONSTANTS = {
   gramsPerOunce: 28.3495,
   referenceBsa: 1.73,
   daysPerMonth: 30.4375,
-  largeQuantityWarningGrams: 1000,
 } as const;
 
 export const DEFAULT_FORMULATION_FACTORS: Record<Formulation, number> = {

@@ -15,11 +15,11 @@ import { CLINICAL_REFERENCE_LINKS } from './data/clinicalReferences';
 import { pediatricFtuReferenceFor, selectedPediatricFtu } from './data/pediatricFtu';
 import type { CalculatorResult, DisplayUnit, DurationUnit, Formulation, FrequencyId, PatientMode, PediatricStage, ProtocolPreset } from './types/calculator';
 import { CLINICAL_CONSTANTS, getPediatricBsaFallback, pediatricStageForAge } from './config/clinical';
-import { calculateMostellerBsa } from './lib/bsa';
+import { assessPatientSize } from './lib/bsa';
 import { calculateFtu } from './lib/ftuCalculations';
 import { anatomicalBsaPercent } from './lib/anatomicalBsa';
 import { FREQUENCIES, getSchedule } from './lib/schedule';
-import { quantityWarnings, validateInputs } from './lib/validation';
+import { validateInputs } from './lib/validation';
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import './styles.css';
 
@@ -82,7 +82,8 @@ export default function App() {
   const [allowancePercent, setAllowancePercent] = useState(0);
   const [packageSizes, setPackageSizes] = useState(createPackageSizes);
 
-  const calculatedBsa = calculateMostellerBsa(heightCm, weightKg);
+  const patientSizeAssessment = assessPatientSize(heightCm, weightKg);
+  const calculatedBsa = patientSizeAssessment.bsa;
   const enteredAge = age.trim() === '' ? undefined : Number(age);
   const pediatricBsaDefault = patientMode === 'child'
     ? getPediatricBsaFallback(pediatricStage, Number.isFinite(enteredAge) ? enteredAge : undefined)
@@ -129,7 +130,7 @@ export default function App() {
     enabledPackageSizes,
   }), [selectedHandprints, selectedFtu, selectedBsaPercent, formulation, formulationFactor, applyFormulationFactor, heightCm, weightKg, calculatedBsa, calculationReferenceBsa, applyBsa, schedule.applicationsPerDay, schedule.applicationsPerWeek, schedule.totalApplications, schedule.durationDays, allowancePercent, enabledPackageSizes.join('|')]);
   const result = useMemo(() => calculateFtu(inputs), [inputs]);
-  const warnings = [...validateInputs(inputs), ...quantityWarnings(result.finalRequiredGrams)];
+  const warnings = [...patientSizeAssessment.warnings, ...validateInputs(inputs)];
 
   const selectedRegions = regions.filter((region) => region.selectedFraction > 0);
   const selectedPresets = PROTOCOL_PRESETS.filter((preset) => activePresetIds.includes(preset.id));
@@ -167,6 +168,15 @@ export default function App() {
     const ageYears = Number(value);
     if (Number.isFinite(ageYears) && ageYears >= 0) setPediatricStage(pediatricStageForAge(ageYears));
   };
+  const changePatientMode = (mode: PatientMode) => {
+    if (mode === patientMode) return;
+    setPatientMode(mode);
+    setAge('');
+    setHeightCm(undefined);
+    setWeightKg(undefined);
+    setApplyBsa(false);
+    if (mode === 'child') setPediatricStage('younger');
+  };
 
   const patientSizeProps = {
     patientMode,
@@ -179,7 +189,7 @@ export default function App() {
     referenceBsa: calculationReferenceBsa,
     adultReferenceBsa: referenceBsa,
     applyBsa,
-    onPatientModeChange: setPatientMode,
+    onPatientModeChange: changePatientMode,
     onPediatricStageChange: (stage: PediatricStage) => { setPediatricStage(stage); setAge(''); },
     onAgeChange: updateAge,
     onHeightChange: setHeightCm,
