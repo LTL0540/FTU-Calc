@@ -101,7 +101,7 @@ export function ResultsPanel(props: Props) {
             <dl><div><dt>Frequency</dt><dd>{props.frequencyLabel}</dd></div><div><dt>Duration</dt><dd>{props.durationLabel}</dd></div><div><dt>Total applications</dt><dd>{formatNumber(props.result.totalApplications, 2)}</dd></div></dl>
           </div>
         </details>
-        <p className="clinical-disclaimer" role="note">Estimate only. Double-check the calculation, prescribed regimen, and available package sizes. This tool does not replace clinical judgment or product-specific guidance.</p>
+        <p className="clinical-disclaimer" role="note"><strong>Beta v0.9 — estimate only.</strong> Independently verify the treatment area, regimen, patient-size adjustment, calculation, and available package sizes before prescribing or dispensing. Do not rely on this tool alone; it does not replace clinical judgment or product-specific guidance.</p>
       </section>
     </aside>
   );

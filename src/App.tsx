@@ -276,7 +276,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><h1 className="sr-only">QuantiDerm topical quantity calculator</h1></div>
+        <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><span className="beta-badge" title="QuantiDerm is currently in beta">Beta v0.9</span><h1 className="sr-only">QuantiDerm topical quantity calculator, beta version 0.9</h1></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-live="polite" aria-label="Live dispensing estimate">
           <div className="header-estimate-main"><span>Suggested dispense</span><strong>{displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
           <div className="header-estimate-exact"><span>Calculated need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
@@ -345,7 +345,7 @@ export default function App() {
         </nav>
       </section>
 
-      <footer><p>This calculator provides an estimate based on fingertip-unit and handprint methods. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Verify the prescribed regimen and available package sizes before dispensing.</p><span>QuantiDerm 1.1 · clinical references reviewed July 2026 · a LokTin Labs tool</span></footer>
+      <footer><p>Beta estimate only. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Independently verify the inputs, calculation, prescribed regimen, and available package sizes before prescribing or dispensing. QuantiDerm does not replace clinical judgment or product-specific guidance.</p><span>QuantiDerm v0.9 beta · clinical references reviewed July 2026 · a LokTin Labs tool</span></footer>
 
       <MobileResultsDrawer result={result} displayUnit={displayUnit} onDisplayUnitChange={setDisplayUnit} summary={mobileSummary} />
     </div>
