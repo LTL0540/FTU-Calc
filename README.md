@@ -33,6 +33,13 @@ produce an estimate. Patient-size adjustment is optional and clearly shown
 when active. A transparent calculation breakdown and supporting references are
 available within the application's **Methodology & help** section.
 
+Handprint/BSA entry is an independent override that replaces the anatomical
+painter. It uses the app convention 1 adult handprint = 0.8% BSA = 0.25 g.
+Published regional FTU tables are independently rounded guidance and therefore
+are not expected to reconcile exactly with a 100% BSA override. The 0.5 g/FTU
+convention assumes a standard 5 mm nozzle; actual mass varies by product,
+vehicle, nozzle, and application technique.
+
 ## Local development
 
 Requirements: Node.js 20+ and pnpm 9+.

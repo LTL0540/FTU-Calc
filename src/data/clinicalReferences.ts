@@ -48,6 +48,12 @@ export const CLINICAL_REFERENCE_LINKS = [
     note: 'Age- and body-region-specific pediatric FTU table, citing Long C, A Guide to Finger Tip Units for Children (British Journal of Dermatology, 1998).',
   },
   {
+    label: 'Long, Mills & Finlay · 1998',
+    topic: 'Primary pediatric FTU study',
+    url: 'https://doi.org/10.1046/j.1365-2133.1998.02077.x',
+    note: 'Primary study deriving and checking broad pediatric regional FTU guidance in children aged 6 months to 9 years 4 months.',
+  },
+  {
     label: 'Dudley Group NHS',
     topic: 'Pediatric FTU table',
     url: 'https://www.dgft.nhs.uk/pil/treatments-used-in-eczema/',
@@ -58,5 +64,17 @@ export const CLINICAL_REFERENCE_LINKS = [
     topic: 'Age-specific body proportions',
     url: 'https://www.cdc.gov.au/system/files/2025-10/enhealth-guidance-australian-exposure-factor-guide_0.pdf',
     note: 'Reference BSA anchors and age-specific head, trunk, upper-extremity, and lower-extremity surface-area proportions used for painter coverage estimates.',
+  },
+  {
+    label: 'Mosteller · 1987',
+    topic: 'BSA formula',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/3657876/',
+    note: 'Primary publication of the simplified square-root height-and-weight BSA formula.',
+  },
+  {
+    label: 'El Edelbi et al. · 2012',
+    topic: 'Pediatric BSA limitation',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/22211780/',
+    note: 'Pediatric validation found good overall correlation but lower precision and the greatest uncertainty in neonates and infants.',
   },
 ] as const;

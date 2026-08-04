@@ -1,6 +1,8 @@
 import type { Formulation, PediatricStage } from '../types/calculator';
 
 export const CLINICAL_CONSTANTS = {
+  // App convention for a standard adult FTU expressed through a 5 mm nozzle.
+  // Actual mass varies by product, nozzle, vehicle, and the applying finger.
   gramsPerHandprint: 0.25,
   bsaPercentPerHandprint: 0.8,
   handprintsPerFtu: 2,

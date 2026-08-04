@@ -56,9 +56,38 @@ describe('package optimization', () => {
     expect(result.totalGrams).toBeGreaterThanOrEqual(98.01);
   });
 
-  it('uses the largest enabled package to reduce container count for a large course', () => {
+  it('honours the 30 g practical-excess cap for a large course', () => {
     const result = optimizePackages(2184.36, [15, 30, 45, 60, 90, 100, 120, 240, 454]);
-    expect(result.totalGrams).toBe(2270);
-    expect(result.packages).toEqual([454, 454, 454, 454, 454]);
+    expect(result.totalGrams).toBe(2185);
+    expect(result.excessGrams).toBeCloseTo(0.64, 8);
+    expect(result.packages).not.toEqual([454, 454, 454, 454, 454]);
+  });
+
+  it('applies the disclosed 20 g floor for small requirements', () => {
+    const result = optimizePackages(16, [7.5, 15, 30]);
+    expect(result.packages).toEqual([30]);
+    expect(result.excessGrams).toBe(14);
+  });
+
+  it.each([
+    [Number.NaN, [15, 30]],
+    [Number.POSITIVE_INFINITY, [15, 30]],
+    [10_001, [15, 30]],
+    [30, [15, Number.POSITIVE_INFINITY]],
+    [30, [0.01, 15]],
+  ])('rejects unsafe requirement %s or package inputs', (requirement, sizes) => {
+    const result = optimizePackages(requirement, sizes);
+    expect(result.valid).toBe(false);
+    expect(result.packages).toEqual([]);
+  });
+
+  it('never under-supplies across a representative property sweep', () => {
+    const sizes = [7.5, 15, 30, 45, 60, 90, 100, 120, 240, 454];
+    for (let requirement = 0.1; requirement <= 500; requirement += 1.7) {
+      const result = optimizePackages(requirement, sizes);
+      expect(result.valid).toBe(true);
+      expect(result.totalGrams).toBeGreaterThanOrEqual(requirement);
+      expect(result.excessGrams).toBeGreaterThanOrEqual(0);
+    }
   });
 });

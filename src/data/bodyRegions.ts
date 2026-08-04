@@ -45,4 +45,4 @@ const backRegions: RegionSeed[] = [
 
 export const createBodyRegions = (): BodyRegion[] => [...frontRegions, ...backRegions].map((region) => ({ ...region, selectedFraction: 0, paintedSegments: [] }));
 
-export const BODY_REGION_REFERENCE_NOTE = 'Painter subdivisions are approximate. Combined surfaces reproduce the adult FTU references: face + neck 2.5; scalp 3; front trunk 7; back + buttocks 7; arm excluding hand 3; hand 1; leg excluding foot 6; foot 2; genital region 0.5.';
+export const BODY_REGION_REFERENCE_NOTE = 'Painter subdivisions are proportional allocations of independently rounded regional FTU guidance: face + neck 2.5; scalp 3; front trunk 7; back + buttocks 7; arm excluding hand 3; hand 1; leg excluding foot 6; foot 2; genital region 0.5. These regional totals are not expected to reconcile exactly with a 100% BSA handprint calculation.';

@@ -27,7 +27,7 @@ describe('anatomical protocol presets', () => {
     expect(total / 2).toBeCloseTo(ftu, 8);
   });
 
-  it('whole-model regional totals stay conservatively close to the approximately 40 FTU clinical check', () => {
+  it('preserves the independently rounded 44 FTU regional sum without forcing reconciliation to 100% BSA', () => {
     const totalFtu = createBodyRegions().reduce((sum, region) => sum + region.adultHandprints, 0) / 2;
     expect(totalFtu).toBe(44);
   });

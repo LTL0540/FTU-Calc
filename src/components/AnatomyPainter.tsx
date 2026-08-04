@@ -4,6 +4,7 @@ import type { BodyRegion, BodyView, PatientMode, PediatricStage } from '../types
 import { CLINICAL_CONSTANTS } from '../config/clinical';
 import { calculateBodyMorph, type BodyMorph } from '../lib/bodyMorph';
 import { getPairedRegionId, mirrorSegmentIndex, resizePaintedSegments } from '../lib/anatomyPairing';
+import { initialRovingRegionIds, nextRegionIdForKey, type AnatomyNavigationKey } from '../lib/anatomyNavigation';
 import { formatNumber } from '../lib/unitConversions';
 import type { PediatricFtuReference } from '../data/pediatricFtu';
 import { pediatricRegionFtu } from '../data/pediatricFtu';
@@ -196,11 +197,14 @@ const FIGURE_SEAMS: Record<BodyView, FigurePath[]> = {
 };
 
 export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatricFtuReference, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mobilePatientPanel, mobileSchedulePanel, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
+  const painterShellRef = useRef<HTMLDivElement>(null);
+  const pendingFocusRegionId = useRef<string | null>(null);
   const [tool, setTool] = useState<Tool>('paint');
   const [isDragging, setIsDragging] = useState(false);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
   const [mobileDrawer, setMobileDrawer] = useState<'size' | 'schedule' | null>(null);
   const [mobileView, setMobileView] = useState<BodyView>('front');
+  const [rovingRegionIds, setRovingRegionIds] = useState(() => initialRovingRegionIds(regions));
   const [historyDepth, setHistoryDepth] = useState(0);
   const lastBrushAt = useRef(0);
   const segmentMemory = useRef<Record<string, number[]>>({});
@@ -239,10 +243,20 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     setIsDragging(false);
     setMobileDrawer(null);
     setMobileView('front');
+    setRovingRegionIds(initialRovingRegionIds(regions));
     segmentMemory.current = {};
     history.current = [];
     setHistoryDepth(0);
   }, [clearSignal]);
+
+  useEffect(() => {
+    const nextId = pendingFocusRegionId.current;
+    if (!nextId) return;
+    painterShellRef.current
+      ?.querySelector<SVGGElement>(`[data-region-id="${nextId}"]`)
+      ?.focus();
+    pendingFocusRegionId.current = null;
+  }, [rovingRegionIds]);
 
   const pushHistory = () => {
     history.current.push({
@@ -327,8 +341,11 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     setIsDragging(false);
   };
 
-  const segmentFromPointer = (event: React.PointerEvent<SVGPathElement>, region: BodyRegion) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+  const segmentFromPointer = (event: React.PointerEvent<SVGGElement | SVGPathElement>, region: BodyRegion) => {
+    const visualTarget = event.currentTarget instanceof SVGGElement
+      ? event.currentTarget.querySelector<SVGPathElement>('[data-region-shape="true"]')
+      : event.currentTarget;
+    const rect = (visualTarget ?? event.currentTarget).getBoundingClientRect();
     const position = region.paintAxis === 'horizontal'
       ? (event.clientX - rect.left) / rect.width
       : (event.clientY - rect.top) / rect.height;
@@ -353,18 +370,13 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     return figureTransforms.upperTorso;
   };
 
-  const handleKey = (event: React.KeyboardEvent<SVGPathElement>, region: BodyRegion) => {
+  const handleKey = (event: React.KeyboardEvent<SVGGElement>, region: BodyRegion) => {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
       event.preventDefault();
-      const viewRegions = regions.filter((item) => item.view === region.view);
-      const currentIndex = viewRegions.findIndex((item) => item.id === region.id);
-      const nextIndex = event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? viewRegions.length - 1
-          : (currentIndex + (event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1) + viewRegions.length) % viewRegions.length;
-      const next = event.currentTarget.ownerSVGElement?.querySelector<SVGPathElement>(`[data-region-id="${viewRegions[nextIndex].id}"]`);
-      next?.focus();
+      const nextId = nextRegionIdForKey(regions, region.id, event.key as AnatomyNavigationKey);
+      pendingFocusRegionId.current = nextId;
+      setRovingRegionIds((current) => ({ ...current, [region.view]: nextId }));
+      setActiveRegionId(nextId);
       return;
     }
     if (event.key === 'Enter' || event.key === ' ') {
@@ -377,7 +389,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     }
   };
 
-  const BodyViewGraphic = ({ view }: { view: BodyView }) => {
+  const renderBodyViewGraphic = (view: BodyView) => {
     const viewRegions = regions.filter((region) => region.view === view);
     const modelLabel = patientMode === 'adult'
       ? 'Adult'
@@ -433,8 +445,45 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
             {viewRegions.map((region) => {
               const horizontal = region.paintAxis === 'horizontal';
               const displayPath = getRegionDisplayPath(region);
+              const poseTransform = getRegionPoseTransform(region);
+              const matrixValues = poseTransform.match(/^matrix\(([-.\d]+)\s+[-.\d]+\s+[-.\d]+\s+([-.\d]+)/);
+              const renderedScaleX = Math.abs(Number(matrixValues?.[1])) || 1;
+              const renderedScaleY = Math.abs(Number(matrixValues?.[2])) || 1;
+              const hitWidth = Math.max(region.bounds.width, 24 / renderedScaleX);
+              const hitHeight = Math.max(region.bounds.height, 24 / renderedScaleY);
+              const hitX = region.bounds.x + region.bounds.width / 2 - hitWidth / 2;
+              const hitY = region.bounds.y + region.bounds.height / 2 - hitHeight / 2;
+              const hasExpandedTouchTarget = region.bounds.width * renderedScaleX < 24 || region.bounds.height * renderedScaleY < 24;
               return (
-                <g key={region.id} className="region-stack" transform={getRegionPoseTransform(region)}>
+                <g
+                  key={region.id}
+                  className="region-stack"
+                  transform={poseTransform}
+                  role="button"
+                  data-region-id={region.id}
+                  tabIndex={rovingRegionIds[view] === region.id ? 0 : -1}
+                  aria-label={`${region.label}, ${formatNumber(region.selectedFraction * 100, 0)}% treated, ${region.paintedSegments.length} of 5 paint zones selected, ${formatNumber((patientMode === 'child' ? pediatricRegionFtu(region.id, pediatricFtuReference) : region.adultHandprints / 2) * region.selectedFraction, 2)} FTU`}
+                  onFocus={() => {
+                    setRovingRegionIds((current) => current[view] === region.id ? current : { ...current, [view]: region.id });
+                  }}
+                  onKeyDown={(event) => handleKey(event, region)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    setRovingRegionIds((current) => ({ ...current, [view]: region.id }));
+                    setIsDragging(true);
+                    lastBrushAt.current = Date.now();
+                    applyTool(region, segmentFromPointer(event, region));
+                  }}
+                  onPointerMove={(event) => {
+                    if (isDragging && Date.now() - lastBrushAt.current > 35) {
+                      lastBrushAt.current = Date.now();
+                      applyTool(region, segmentFromPointer(event, region));
+                    }
+                  }}
+                  onPointerEnter={(event) => {
+                    if (isDragging) applyTool(region, segmentFromPointer(event, region));
+                  }}
+                >
                   <path d={displayPath} className="anatomy-region-base" style={{ fill: `url(#body-surface-${view})` }} />
                   <g clipPath={`url(#clip-${region.id})`} pointerEvents="none">
                     {region.paintedSegments.map((segment) => (
@@ -469,29 +518,11 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                   </g>
                   <path
                     d={displayPath}
+                    data-region-shape="true"
                     className={`anatomy-region${region.selectedFraction > 0 ? ' has-selection' : ''}${activeRegionId === region.id ? ' is-active' : ''}`}
-                    role="button"
-                    data-region-id={region.id}
-                    tabIndex={0}
-                    aria-label={`${region.label}, ${formatNumber(region.selectedFraction * 100, 0)}% treated, ${region.paintedSegments.length} of 5 paint zones selected, ${formatNumber((patientMode === 'child' ? pediatricRegionFtu(region.id, pediatricFtuReference) : region.adultHandprints / 2) * region.selectedFraction, 2)} FTU`}
-                    onFocus={() => setActiveRegionId(region.id)}
-                    onKeyDown={(event) => handleKey(event, region)}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      setIsDragging(true);
-                      lastBrushAt.current = Date.now();
-                      applyTool(region, segmentFromPointer(event, region));
-                    }}
-                    onPointerMove={(event) => {
-                      if (isDragging && Date.now() - lastBrushAt.current > 35) {
-                        lastBrushAt.current = Date.now();
-                        applyTool(region, segmentFromPointer(event, region));
-                      }
-                    }}
-                    onPointerEnter={(event) => {
-                      if (isDragging) applyTool(region, segmentFromPointer(event, region));
-                    }}
                   />
+                  <path d={displayPath} className="anatomy-region-hit-target" />
+                  {hasExpandedTouchTarget && <rect className="anatomy-region-hit-target expanded" x={hitX} y={hitY} width={hitWidth} height={hitHeight} rx="5" />}
                 </g>
               );
             })}
@@ -547,7 +578,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
   };
 
   return (
-    <div className={`painter-shell tool-${tool}`}>
+    <div ref={painterShellRef} className={`painter-shell tool-${tool}`}>
       <div className="tool-row" role="toolbar" aria-label="Anatomy selection tools">
         <button type="button" className={`mobile-workflow-button${mobileDrawer === 'size' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'}>
           <SlidersHorizontal size={17} /> Patient size
@@ -571,7 +602,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
         </button>
         <button className="tool clear-tool" onClick={clearWithUndo}><RotateCcw size={17} /> Clear</button>
       </div>
-      <p className="microcopy" aria-live="polite">
+      <p className="microcopy">
         <span className="tool-status">{tool === 'paint' ? 'Paint mode' : tool === 'erase' ? 'Erase mode' : 'Whole-region mode'}</span>
         Each paint or erase click changes one 20% region zone; figures stay zoomed for easy targeting.
         {mirrorFrontBack ? ' Paired front and back surfaces update together.' : ''}
@@ -586,10 +617,10 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
         <button type="button" className={mobileView === 'back' ? 'active' : ''} aria-pressed={mobileView === 'back'} onClick={() => setMobileView('back')}>Back</button>
       </div>
       <div className="body-views" onPointerUp={() => setIsDragging(false)}>
-        <BodyViewGraphic view="front" />
-        <BodyViewGraphic view="back" />
+        {renderBodyViewGraphic('front')}
+        {renderBodyViewGraphic('back')}
       </div>
-      <div className={`region-inspector${activeRegion ? '' : ' is-empty'}`} aria-live="polite">
+      <div className={`region-inspector${activeRegion ? '' : ' is-empty'}`}>
         {activeRegion ? (
           <>
             <div>

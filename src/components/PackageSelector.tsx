@@ -24,7 +24,7 @@ export function PackageSelector({ packages, onChange }: Props) {
     <details className="card settings-card package-card">
       <summary><span><PackagePlus size={18} /> Package sizes</span><small>{packages.filter((item) => item.enabled).length} enabled</small></summary>
       <div className="package-settings">
-        <p>Recommendation rule: prefer one package or matching package sizes when practical. For larger courses, use fewer larger containers when excess remains within 20%; otherwise minimize excess, then container count.</p>
+        <p>Recommendation rule: prefer one package or matching sizes when excess is within 20% of need, using a 20 g floor and 30 g cap for that allowance. Otherwise minimize excess, then container count.</p>
         <div className="package-list">
           {packages.map((item, index) => (
             <div className="package-row" key={item.id}>

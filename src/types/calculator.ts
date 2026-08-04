@@ -6,6 +6,19 @@ export type BodySide = 'left' | 'right' | 'midline' | 'bilateral';
 export type BodyView = 'front' | 'back';
 export type AreaMode = 'painter' | 'checklist' | 'handprints' | 'bsa';
 
+export type ClinicalIssueSeverity = 'warning' | 'blocking';
+
+export type ClinicalIssue = {
+  code: string;
+  message: string;
+  severity: ClinicalIssueSeverity;
+};
+
+export type CalculationStatus = {
+  isBlocking: boolean;
+  issues: ClinicalIssue[];
+};
+
 export type BodyRegion = {
   id: string;
   label: string;
@@ -50,6 +63,7 @@ export type CalculatorInputs = {
   allowancePercent: number;
   minimumTreatmentGrams?: number;
   enabledPackageSizes: number[];
+  upstreamIssues?: ClinicalIssue[];
 };
 
 export type CalculatorResult = {
@@ -67,6 +81,7 @@ export type CalculatorResult = {
   suggestedPackages: number[];
   suggestedDispensedGrams: number;
   excessGrams: number;
+  status: CalculationStatus;
 };
 
 export type PackageSize = { id: string; grams: number; enabled: boolean };

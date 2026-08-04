@@ -11,6 +11,7 @@ type Props = {
   pediatricBsaDefault?: { bsa: number; assumedAge: string; ageRange: string };
   pediatricFtuReference?: PediatricFtuReference;
   age: string;
+  ageMonths: string;
   heightCm?: number;
   weightKg?: number;
   referenceBsa: number;
@@ -19,6 +20,7 @@ type Props = {
   onPatientModeChange: (value: PatientMode) => void;
   onPediatricStageChange: (value: PediatricStage) => void;
   onAgeChange: (value: string) => void;
+  onAgeMonthsChange: (value: string) => void;
   onHeightChange: (value?: number) => void;
   onWeightChange: (value?: number) => void;
   onReferenceBsaChange: (value: number) => void;
@@ -92,11 +94,17 @@ function DecimalMeasurement({ ariaLabel, placeholder, value, onChange, min = 0, 
 }
 
 export function PatientSizePanel(props: Props) {
-  const sizeAssessment = assessPatientSize(props.heightCm, props.weightKg);
+  const enteredAgeYears = props.age.trim() === '' ? undefined : Number(props.age);
+  const enteredAgeMonths = props.ageMonths.trim() === '' ? undefined : Number(props.ageMonths);
+  const sizeAssessment = assessPatientSize(props.heightCm, props.weightKg, {
+    patientMode: props.patientMode,
+    ageYears: enteredAgeYears,
+    ageMonths: enteredAgeMonths,
+  });
   const calculatedBsa = sizeAssessment.bsa;
   const ratio = calculatedBsa && calculatedBsa > 0 ? calculatedBsa / props.referenceBsa : undefined;
   const { feet: heightFeet, inches: heightInches } = centimetersToFeetInches(props.heightCm);
-  const numericAge = props.age.trim() === '' ? undefined : Number(props.age);
+  const numericAge = enteredAgeMonths !== undefined ? enteredAgeMonths / 12 : enteredAgeYears;
   const maxPounds = Math.round((PATIENT_SIZE_LIMITS.weightKg.max / 0.45359237) * 10) / 10;
   const minPounds = Math.round((PATIENT_SIZE_LIMITS.weightKg.min / 0.45359237) * 10) / 10;
   const commitImperialHeight = (feet: number, inches: number) => {
@@ -116,7 +124,7 @@ export function PatientSizePanel(props: Props) {
         </div>
         <label className="header-bsa-switch">
           <span>Adjust by BSA</span>
-          <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} disabled={!calculatedBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
+          <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} disabled={!calculatedBsa && !props.applyBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
         </label>
       </div>
       {props.patientMode === 'child' && (
@@ -134,7 +142,10 @@ export function PatientSizePanel(props: Props) {
       )}
       <div className={`patient-field-grid${props.patientMode === 'child' ? ' has-age' : ''}`}>
         {props.patientMode === 'child' && (
-          <label className="age-field"><span>Age <small>(full years)</small></span><input aria-label="Age in full years" type="number" inputMode="numeric" min="0" step="1" placeholder="e.g. 4" value={props.age} onChange={(event) => { const next = event.target.value; if (next === '' || /^\d+$/.test(next)) props.onAgeChange(next); }} /></label>
+            <>
+              <label className="age-field"><span>Age <small>(full years)</small></span><input aria-label="Age in full years" type="number" inputMode="numeric" min="0" max="17" step="1" placeholder="e.g. 4" value={props.age} onChange={(event) => { const next = event.target.value; if (next === '' || /^\d+$/.test(next)) props.onAgeChange(next); }} /></label>
+              <label className="age-field"><span>Or age <small>(months, under 2)</small></span><input aria-label="Age in months for children under 2 years" type="number" inputMode="numeric" min="0" max="23" step="1" placeholder="e.g. 6" value={props.ageMonths} onChange={(event) => { const next = event.target.value; if (next === '' || /^\d+$/.test(next)) props.onAgeMonthsChange(next); }} /></label>
+            </>
         )}
         <div className="compound-field height-field">
           <div className="field-label"><span>Height</span><div className="mini-tabs"><span className="active">cm</span><span>ft / in</span></div></div>
@@ -159,6 +170,7 @@ export function PatientSizePanel(props: Props) {
         <div><span>{props.patientMode === 'child' ? 'Age reference BSA' : 'Reference BSA'}</span><strong>{formatNumber(props.referenceBsa, 2)} m²</strong></div>
         <div><span>Adjustment ratio</span><strong>{ratio ? `${formatNumber(ratio, 3)}×` : '—'}</strong></div>
       </div>
+      <p className="pediatric-assumption">BSA adjustment remains off until selected. Mosteller BSA is an estimate and is less precise in neonates and infants; extreme measured-to-reference ratios are blocked for review.</p>
       {sizeAssessment.warnings.length > 0 && <div className="patient-size-warning" role="alert"><TriangleAlert size={16} /><span>{sizeAssessment.warnings.join(' ')}</span></div>}
       {props.patientMode === 'adult' && <details className="inline-details"><summary>Advanced BSA settings</summary><label><span>Reference adult BSA</span><div className="unit-input narrow"><input type="number" min="0.1" step="0.01" value={props.adultReferenceBsa} onChange={(event) => props.onReferenceBsaChange(Math.max(0.1, Number(event.target.value)))} /><span>m²</span></div></label></details>}
     </section>

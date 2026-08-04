@@ -38,4 +38,25 @@ describe('patient size conversions', () => {
     expect(resolvePatientBsa(undefined, 0.91, 0.78)).toBe(0.91);
     expect(resolvePatientBsa(0.84, 0.91, 0.78)).toBe(0.84);
   });
+
+  it('accepts a legitimate very small infant within absolute safety bounds', () => {
+    const assessment = assessPatientSize(30, 0.3, { patientMode: 'child', ageMonths: 0 });
+    expect(assessment.bsa).toBeCloseTo(0.05, 8);
+    expect(assessment.issues.filter((issue) => issue.severity === 'blocking')).toEqual([]);
+  });
+
+  it('warns when pediatric age and measurements are implausibly mismatched', () => {
+    const assessment = assessPatientSize(200, 80, { patientMode: 'child', ageYears: 4 });
+    expect(assessment.bsa).toBeDefined();
+    expect(assessment.issues.some((issue) => issue.code === 'patient.height.age_mismatch')).toBe(true);
+  });
+
+  it('blocks non-finite measurements and unsupported pediatric ages', () => {
+    expect(assessPatientSize(Number.POSITIVE_INFINITY, 10, { patientMode: 'child', ageYears: 1 }).bsa).toBeUndefined();
+    expect(assessPatientSize(170, 70, { patientMode: 'child', ageYears: 18 }).issues[0].severity).toBe('blocking');
+  });
+
+  it('ignores non-finite manual BSA candidates', () => {
+    expect(resolvePatientBsa(Number.NaN, 0.91, 0.78)).toBe(0.91);
+  });
 });

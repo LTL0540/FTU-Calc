@@ -86,4 +86,51 @@ describe('FTU clinical calculations', () => {
     expect(result.baseGramsPerApplication).toBe(0.75);
     expect(result.approximateBsaPercent).toBe(7.2);
   });
+
+  it('keeps a 100% BSA handprint override distinct from the independently rounded regional table', () => {
+    const override = calculateFtu(baseInputs({ selectedHandprints: 125, selectedBsaPercent: 100 }));
+    const regional = calculateFtu(baseInputs({ selectedHandprints: 88, selectedFtu: 44, selectedBsaPercent: 100 }));
+    expect(override.ftuPerApplication).toBe(62.5);
+    expect(regional.ftuPerApplication).toBe(44);
+    expect(override.baseGramsPerApplication).toBe(31.25);
+    expect(regional.baseGramsPerApplication).toBe(22);
+  });
+
+  it('does not apply a supplied BSA until explicit opt-in', () => {
+    const result = calculateFtu(baseInputs({ patientBsa: 3, applyBsaAdjustment: false }));
+    expect(result.status.isBlocking).toBe(false);
+    expect(result.bsaRatio).toBe(1);
+  });
+
+  it.each([
+    { patientBsa: 0.8, referenceBsa: 1.73 },
+    { patientBsa: 3, referenceBsa: 1.73 },
+  ])('blocks BSA adjustment ratios outside the conservative guard', ({ patientBsa, referenceBsa }) => {
+    const result = calculateFtu(baseInputs({ patientBsa, referenceBsa, applyBsaAdjustment: true }));
+    expect(result.status.isBlocking).toBe(true);
+    expect(result.status.issues.some((issue) => issue.code === 'bsa.adjustment.ratio')).toBe(true);
+    expect(result.suggestedPackages).toEqual([]);
+  });
+
+  it.each([
+    { label: 'NaN area', overrides: { selectedHandprints: Number.NaN } },
+    { label: 'infinite total applications', overrides: { totalApplications: Number.POSITIVE_INFINITY } },
+    { label: 'excessive total applications', overrides: { totalApplications: 10_001 } },
+    { label: 'non-finite allowance', overrides: { allowancePercent: Number.NaN } },
+    { label: 'excessive allowance', overrides: { allowancePercent: 101 } },
+    { label: 'non-finite package', overrides: { enabledPackageSizes: [15, Number.POSITIVE_INFINITY] } },
+  ])('returns a structured blocking result for $label', ({ overrides }) => {
+    const result = calculateFtu(baseInputs(overrides));
+    expect(result.status.isBlocking).toBe(true);
+    expect(result.finalRequiredGrams).toBe(0);
+    expect(result.suggestedPackages).toEqual([]);
+  });
+
+  it('propagates an upstream unmapped-region issue into a blocked recommendation', () => {
+    const result = calculateFtu(baseInputs({
+      upstreamIssues: [{ code: 'area.region.unmapped', message: 'Unknown region.', severity: 'blocking' }],
+    }));
+    expect(result.status).toMatchObject({ isBlocking: true });
+    expect(result.status.issues[0].code).toBe('area.region.unmapped');
+  });
 });

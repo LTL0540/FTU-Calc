@@ -47,22 +47,78 @@ function groupFor(regionId: string) {
   if (TRUNK_IDS.has(regionId)) return 'trunk' as const;
   if (UPPER_IDS.has(regionId)) return 'upper' as const;
   if (LOWER_IDS.has(regionId)) return 'lower' as const;
-  return 'genital' as const;
+  if (regionId === 'groin') return 'genital' as const;
+  return undefined;
 }
 
-export function anatomicalBsaPercent(regions: BodyRegion[], mode: PatientMode, representativeAge = 10): number {
+export function assessAnatomicalBsaPercent(regions: BodyRegion[], mode: PatientMode, representativeAge = 10) {
+  const unknownIds = [...new Set(regions.filter((region) => groupFor(region.id) === undefined).map((region) => region.id))];
+  if (unknownIds.length > 0) {
+    return {
+      percent: 0,
+      issues: [{
+        code: 'area.anatomical_region.unmapped',
+        message: `Unmapped anatomical region ID${unknownIds.length === 1 ? '' : 's'}: ${unknownIds.join(', ')}.`,
+        severity: 'blocking' as const,
+      }],
+    };
+  }
+  if (regions.some((region) => !Number.isFinite(region.selectedFraction) || region.selectedFraction < 0 || region.selectedFraction > 1)) {
+    return {
+      percent: 0,
+      issues: [{
+        code: 'area.region_fraction.invalid',
+        message: 'Region treatment fractions must be finite and between 0% and 100%.',
+        severity: 'blocking' as const,
+      }],
+    };
+  }
+
   const compartments = mode === 'adult' ? ADULT : pediatricCompartments(representativeAge);
   const genitalPercent = 1;
   const availableTrunk = compartments.trunk - genitalPercent;
   const totals = regions.reduce((map, region) => {
     const group = groupFor(region.id);
+    if (group === undefined) return map;
     map[group] = (map[group] ?? 0) + region.adultHandprints;
     return map;
   }, {} as Record<string, number>);
-  return regions.reduce((sum, region) => {
+  const missingGroup = regions.find((region) => {
     const group = groupFor(region.id);
+    return group === undefined || !Number.isFinite(totals[group]) || totals[group] <= 0;
+  });
+  if (missingGroup) {
+    return {
+      percent: 0,
+      issues: [{
+        code: 'area.anatomical_group.invalid',
+        message: `Anatomical surface allocation is incomplete for region ${missingGroup.id}.`,
+        severity: 'blocking' as const,
+      }],
+    };
+  }
+  const percent = regions.reduce((sum, region) => {
+    const group = groupFor(region.id);
+    if (group === undefined) return sum;
     const groupPercent = group === 'genital' ? genitalPercent : group === 'trunk' ? availableTrunk : compartments[group];
     const fullRegionPercent = groupPercent * (region.adultHandprints / totals[group]);
     return sum + fullRegionPercent * region.selectedFraction;
   }, 0);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100.01) {
+    return {
+      percent: 0,
+      issues: [{
+        code: 'area.anatomical_bsa.invalid',
+        message: 'Anatomical BSA allocation produced an invalid total.',
+        severity: 'blocking' as const,
+      }],
+    };
+  }
+  return { percent, issues: [] };
+}
+
+export function anatomicalBsaPercent(regions: BodyRegion[], mode: PatientMode, representativeAge = 10): number {
+  const assessment = assessAnatomicalBsaPercent(regions, mode, representativeAge);
+  if (assessment.issues.length > 0) throw new Error(assessment.issues[0].message);
+  return assessment.percent;
 }

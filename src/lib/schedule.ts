@@ -1,5 +1,6 @@
 import { CLINICAL_CONSTANTS } from '../config/clinical';
 import type { DurationUnit, FrequencyId } from '../types/calculator';
+import { CALCULATION_LIMITS } from './validation';
 
 export const FREQUENCIES: Array<{ id: FrequencyId; label: string; perDay?: number; perWeek?: number }> = [
   { id: 'daily', label: 'Once daily', perDay: 1 },
@@ -45,5 +46,26 @@ export function getSchedule(
   const totalApplications = applicationsPerWeek !== undefined || frequency === 'alternate'
     ? Math.ceil(rawApplications - Number.EPSILON)
     : rawApplications;
-  return { durationDays, applicationsPerDay, applicationsPerWeek, totalApplications };
+  const issues = [];
+  if (!Number.isFinite(durationDays) || durationDays <= 0) {
+    issues.push({ code: 'schedule.duration.invalid', message: 'Treatment duration must be a finite number greater than zero.', severity: 'blocking' as const });
+  }
+  if (
+    !Number.isFinite(totalApplications)
+    || totalApplications <= 0
+    || totalApplications > CALCULATION_LIMITS.maxTotalApplications
+  ) {
+    issues.push({
+      code: 'schedule.total.invalid',
+      message: `Total applications must be finite, greater than zero, and no more than ${CALCULATION_LIMITS.maxTotalApplications}.`,
+      severity: 'blocking' as const,
+    });
+  }
+  return {
+    durationDays,
+    applicationsPerDay,
+    applicationsPerWeek,
+    totalApplications: Number.isFinite(totalApplications) && totalApplications > 0 ? totalApplications : 0,
+    issues,
+  };
 }
