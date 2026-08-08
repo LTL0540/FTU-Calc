@@ -563,15 +563,14 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                 aria-hidden="true"
                 pointerEvents="none"
               >
-                <ellipse cx="73.5" cy="63" rx="2.6" ry="3.3" />
-                <ellipse cx="86.5" cy="63" rx="2.6" ry="3.3" />
-                <circle className="eye-shine" cx="72.8" cy="62" r=".7" />
-                <circle className="eye-shine" cx="85.8" cy="62" r=".7" />
+                <ellipse cx="73.5" cy="63" rx="1.35" ry="1.6" />
+                <ellipse cx="86.5" cy="63" rx="1.35" ry="1.6" />
+                <path d="M80 64.5 L79 70 L81 70" />
               </g>
             )}
           </g>
-          <text x="17" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'R' : 'L'}</text>
-          <text x="139" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'L' : 'R'}</text>
+          <text x="8" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'Right' : 'Left'}</text>
+          <text x="129" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'Left' : 'Right'}</text>
         </svg>
       </div>
     );
@@ -595,7 +594,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
         </label>
         <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} title="Undo the last painter change"><Undo2 size={17} /> Undo</button>
         <button className={tool === 'whole' ? 'tool active' : 'tool'} onClick={() => setTool('whole')} aria-pressed={tool === 'whole'}>
-          <PaintBucket size={17} /> Whole region
+          <PaintBucket size={17} /> Fill region
         </button>
         <button className={tool === 'erase' ? 'tool active' : 'tool'} onClick={() => setTool('erase')} aria-pressed={tool === 'erase'}>
           <Eraser size={17} /> Erase

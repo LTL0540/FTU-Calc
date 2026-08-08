@@ -23,6 +23,7 @@ import { durationValueForUnitChange, FREQUENCIES, getSchedule } from './lib/sche
 import { formatNumber, formatOunces } from './lib/unitConversions';
 import { buildConciseResultAnnouncement, shouldShowMobileResults, type ResultPresentation } from './lib/resultPresentation';
 import { hasMeaningfulResetState } from './lib/resetState';
+import { addTreatmentAreaPreset } from './lib/presetSelection';
 import './styles.css';
 
 export default function App() {
@@ -149,6 +150,7 @@ export default function App() {
   const suggestedPackageLabel = result.status.isBlocking
     ? 'Recommendation blocked'
     : result.suggestedPackages.length ? result.suggestedPackages.map((grams) => `${formatNumber(grams, 1)} g`).join(' + ') : 'No package configured';
+  const hasTreatmentArea = result.ftuPerApplication > 0;
   const displayQuantity = (grams: number, practical = false) => {
     const gramText = `${formatNumber(grams, practical ? 1 : 2)} g`;
     if (displayUnit === 'g') return gramText;
@@ -313,16 +315,10 @@ export default function App() {
   };
 
   const applyPreset = (preset: ProtocolPreset) => {
-    const selectedIds = new Set(preset.regionIds);
-    setRegions((current) => current.map((region) => selectedIds.has(region.id)
-      ? { ...region, selectedFraction: 1, paintedSegments: [0, 1, 2, 3, 4] }
-      : region));
+    const next = addTreatmentAreaPreset(regions, activePresetIds, preset);
+    setRegions(next.regions);
     setHandprintOverrideEnabled(false);
-    setActivePresetIds((current) => current.includes(preset.id) ? current : [...current, preset.id]);
-    setFrequency('bid');
-    setDurationValue(14);
-    setDurationUnit('days');
-    setAllowancePercent(0);
+    setActivePresetIds(next.activePresetIds);
   };
 
   return (
@@ -332,8 +328,8 @@ export default function App() {
       <header className="topbar">
         <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><span className="beta-badge" title="QuantiDerm is currently in beta">Beta v0.9</span><h1 className="sr-only">QuantiDerm topical quantity calculator, beta version 0.9</h1></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-label="Current dispensing estimate">
-          <div className="header-estimate-main"><span>Suggested dispense</span><strong>{result.status.isBlocking ? 'Review inputs' : displayQuantity(result.suggestedDispensedGrams, true)}</strong><small>{suggestedPackageLabel}</small></div>
-          <div className="header-estimate-exact"><span>Calculated need</span><strong>{displayQuantity(result.finalRequiredGrams)}</strong></div>
+          <div className="header-estimate-main"><span>{hasTreatmentArea ? 'Suggested dispense' : 'Next step'}</span><strong>{result.status.isBlocking ? 'Review inputs' : hasTreatmentArea ? displayQuantity(result.suggestedDispensedGrams, true) : 'Select an area'}</strong><small>{hasTreatmentArea ? suggestedPackageLabel : 'Choose a preset or paint the affected area'}</small></div>
+          <div className="header-estimate-exact"><span>Calculated need</span><strong>{hasTreatmentArea ? displayQuantity(result.finalRequiredGrams) : '—'}</strong></div>
           <div className="segmented compact-toggle header-unit-toggle" role="group" aria-label="Display units">
             <button className={displayUnit === 'g' ? 'active' : ''} onClick={() => setDisplayUnit('g')} aria-pressed={displayUnit === 'g'}>Grams</button>
             <button className={displayUnit === 'oz' ? 'active' : ''} onClick={() => setDisplayUnit('oz')} aria-pressed={displayUnit === 'oz'}>Ounces</button>
@@ -355,9 +351,9 @@ export default function App() {
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} />
             <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} pediatricFtuReference={pediatricFtuReference} heightCm={heightCm} weightKg={weightKg} modelBsa={modelBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <details className="text-region-entry"><summary>Text-based region entry</summary><AnatomyRegionList regions={regions} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} onChange={updateRegion} onClear={() => { clearPaintedArea(); setPainterClearSignal((current) => current + 1); }} /></details>
-            <p className="reference-note"><CheckCircle2 size={15} /> {patientMode === 'child'
+            <details className="reference-note"><summary><CheckCircle2 size={15} /> Regional FTU reference notes</summary><p>{patientMode === 'child'
               ? `Child quantities use the ${pediatricFtuReference.label} broad-region FTU table. Every smaller painter subdivision is a proportional allocation of its cited broad-region total; scalp and genital values are additional proportional estimates because those surfaces are not listed separately.`
-              : BODY_REGION_REFERENCE_NOTE}</p>
+              : BODY_REGION_REFERENCE_NOTE}</p></details>
           </section>
         </div>
 
@@ -385,18 +381,18 @@ export default function App() {
             <article><h3>Patient BSA adjustment</h3><p>The Mosteller formula is √[(height in cm × weight in kg) ÷ 3600]. Adjustment stays off until explicitly enabled. Pediatric regional FTUs provide the baseline; measured BSA is compared with the age reference. Extreme ratios are blocked, and Mosteller estimates require added caution in neonates and infants.</p></article>
             <article><h3>Why round up?</h3><p>A recommendation must cover the mathematical requirement. One package or matching sizes may be preferred when excess is within 20% of need, with a 20 g floor and 30 g cap. Otherwise the rule minimizes excess, then container count. Actual use may vary with product, thickness, site, hair, dressings, surface, and adherence.</p></article>
           </div>
+          <nav className="clinical-basis" aria-label="Clinical source material">
+            <span className="clinical-basis-label"><BookOpen size={15} /> Sources</span>
+            <div className="clinical-basis-links">
+              {CLINICAL_REFERENCE_LINKS.map((reference) => (
+                <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" title={`${reference.note} (opens in a new tab)`}>
+                  <span>{reference.label}<small>{reference.topic}</small></span>
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          </nav>
         </details>
-        <nav className="clinical-basis" aria-label="Clinical source material">
-          <span className="clinical-basis-label"><BookOpen size={15} /> Resources</span>
-          <div className="clinical-basis-links">
-            {CLINICAL_REFERENCE_LINKS.map((reference) => (
-              <a key={reference.url} href={reference.url} target="_blank" rel="noreferrer" title={reference.note}>
-                <span>{reference.label}<small>{reference.topic}</small></span>
-                <ExternalLink size={12} aria-hidden="true" />
-              </a>
-            ))}
-          </div>
-        </nav>
       </section>
 
       <footer><p>Beta estimate only. Actual topical medication use may vary by product, vehicle, body site, skin condition, and application technique. Independently verify the inputs, calculation, prescribed regimen, and available package sizes before prescribing or dispensing. QuantiDerm does not replace clinical judgment or product-specific guidance.</p><span>QuantiDerm v0.9 beta · clinical references reviewed July 2026 · a LokTin Labs tool</span></footer>

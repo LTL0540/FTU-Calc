@@ -94,6 +94,8 @@ function DecimalMeasurement({ ariaLabel, placeholder, value, onChange, min = 0, 
 }
 
 export function PatientSizePanel(props: Props) {
+  const [adjustmentOpen, setAdjustmentOpen] = useState(props.patientMode === 'child' || props.applyBsa || props.heightCm !== undefined || props.weightKg !== undefined);
+  const [measurementUnit, setMeasurementUnit] = useState<'metric' | 'imperial'>('metric');
   const enteredAgeYears = props.age.trim() === '' ? undefined : Number(props.age);
   const enteredAgeMonths = props.ageMonths.trim() === '' ? undefined : Number(props.ageMonths);
   const sizeAssessment = assessPatientSize(props.heightCm, props.weightKg, {
@@ -114,6 +116,10 @@ export function PatientSizePanel(props: Props) {
     }
   };
 
+  useEffect(() => {
+    if (props.patientMode === 'child' || props.applyBsa) setAdjustmentOpen(true);
+  }, [props.patientMode, props.applyBsa]);
+
   return (
     <section className={`card section-card patient-panel ${props.patientMode === 'child' ? 'child-emphasis' : ''}`}>
       <div className="section-heading patient-heading">
@@ -122,11 +128,10 @@ export function PatientSizePanel(props: Props) {
           <button className={props.patientMode === 'adult' ? 'active' : ''} onClick={() => props.onPatientModeChange('adult')} aria-pressed={props.patientMode === 'adult'}>Adult</button>
           <button className={props.patientMode === 'child' ? 'active' : ''} onClick={() => props.onPatientModeChange('child')} aria-pressed={props.patientMode === 'child'}>Child</button>
         </div>
-        <label className="header-bsa-switch">
-          <span>Adjust by BSA</span>
-          <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} disabled={!calculatedBsa && !props.applyBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
-        </label>
       </div>
+      <details className="patient-adjustment-details" open={adjustmentOpen} onToggle={(event) => setAdjustmentOpen(event.currentTarget.open)}>
+        <summary><span>Patient-size adjustment</span><small>{props.applyBsa ? 'On' : 'Optional'}</small></summary>
+        <div className="patient-adjustment-body">
       {props.patientMode === 'child' && (
         <div className="pediatric-stage-control">
           <span>Pediatric model</span>
@@ -148,20 +153,19 @@ export function PatientSizePanel(props: Props) {
             </>
         )}
         <div className="compound-field height-field">
-          <div className="field-label"><span>Height</span><div className="mini-tabs"><span className="active">cm</span><span>ft / in</span></div></div>
+          <div className="field-label"><span>Height</span><div className="segmented measurement-unit-toggle" role="group" aria-label="Height units"><button type="button" className={measurementUnit === 'metric' ? 'active' : ''} onClick={() => setMeasurementUnit('metric')} aria-pressed={measurementUnit === 'metric'}>cm</button><button type="button" className={measurementUnit === 'imperial' ? 'active' : ''} onClick={() => setMeasurementUnit('imperial')} aria-pressed={measurementUnit === 'imperial'}>ft / in</button></div></div>
           <div className="measurement-row">
-            <div className="unit-input"><DecimalMeasurement ariaLabel="Height in centimetres" placeholder="cm" value={props.heightCm} min={PATIENT_SIZE_LIMITS.heightCm.min} max={PATIENT_SIZE_LIMITS.heightCm.max} allowOutOfRange onChange={props.onHeightChange} /><span>cm</span></div>
-            <span className="or-label">or</span>
-            <div className="unit-input compact"><DecimalMeasurement ariaLabel="Height feet" placeholder="ft" value={heightFeet} min={0} max={8} decimals={0} integer onInvalid={() => props.onHeightChange(undefined)} onChange={(value) => value === undefined ? props.onHeightChange(undefined) : commitImperialHeight(value, heightInches ?? 0)} /><span>ft</span></div>
-            <div className="unit-input compact"><DecimalMeasurement ariaLabel="Height inches" placeholder="in" value={heightInches} min={0} max={11.9} onInvalid={() => props.onHeightChange(undefined)} onChange={(value) => value === undefined && heightFeet === undefined ? props.onHeightChange(undefined) : commitImperialHeight(heightFeet ?? 0, value ?? 0)} /><span>in</span></div>
+            {measurementUnit === 'metric'
+              ? <div className="unit-input"><DecimalMeasurement ariaLabel="Height in centimetres" placeholder="cm" value={props.heightCm} min={PATIENT_SIZE_LIMITS.heightCm.min} max={PATIENT_SIZE_LIMITS.heightCm.max} allowOutOfRange onChange={props.onHeightChange} /><span>cm</span></div>
+              : <><div className="unit-input compact"><DecimalMeasurement ariaLabel="Height feet" placeholder="ft" value={heightFeet} min={0} max={8} decimals={0} integer onInvalid={() => props.onHeightChange(undefined)} onChange={(value) => value === undefined ? props.onHeightChange(undefined) : commitImperialHeight(value, heightInches ?? 0)} /><span>ft</span></div><div className="unit-input compact"><DecimalMeasurement ariaLabel="Height inches" placeholder="in" value={heightInches} min={0} max={11.9} onInvalid={() => props.onHeightChange(undefined)} onChange={(value) => value === undefined && heightFeet === undefined ? props.onHeightChange(undefined) : commitImperialHeight(heightFeet ?? 0, value ?? 0)} /><span>in</span></div></>}
           </div>
         </div>
         <div className="compound-field weight-field">
-          <div className="field-label"><span>Weight</span><div className="mini-tabs"><span className="active">kg</span><span>lb</span></div></div>
+          <div className="field-label"><span>Weight</span><div className="segmented measurement-unit-toggle" role="group" aria-label="Weight units"><button type="button" className={measurementUnit === 'metric' ? 'active' : ''} onClick={() => setMeasurementUnit('metric')} aria-pressed={measurementUnit === 'metric'}>kg</button><button type="button" className={measurementUnit === 'imperial' ? 'active' : ''} onClick={() => setMeasurementUnit('imperial')} aria-pressed={measurementUnit === 'imperial'}>lb</button></div></div>
           <div className="measurement-row">
-            <div className="unit-input"><DecimalMeasurement ariaLabel="Weight in kilograms" placeholder="kg" value={props.weightKg} min={PATIENT_SIZE_LIMITS.weightKg.min} max={PATIENT_SIZE_LIMITS.weightKg.max} allowOutOfRange onChange={props.onWeightChange} /><span>kg</span></div>
-            <span className="or-label">or</span>
-            <div className="unit-input"><DecimalMeasurement ariaLabel="Weight in pounds" placeholder="lb" value={props.weightKg ? props.weightKg / 0.45359237 : undefined} min={minPounds} max={maxPounds} allowOutOfRange onChange={(value) => props.onWeightChange(value === undefined ? undefined : Math.round(poundsToKg(value) * 10) / 10)} /><span>lb</span></div>
+            {measurementUnit === 'metric'
+              ? <div className="unit-input"><DecimalMeasurement ariaLabel="Weight in kilograms" placeholder="kg" value={props.weightKg} min={PATIENT_SIZE_LIMITS.weightKg.min} max={PATIENT_SIZE_LIMITS.weightKg.max} allowOutOfRange onChange={props.onWeightChange} /><span>kg</span></div>
+              : <div className="unit-input"><DecimalMeasurement ariaLabel="Weight in pounds" placeholder="lb" value={props.weightKg ? props.weightKg / 0.45359237 : undefined} min={minPounds} max={maxPounds} allowOutOfRange onChange={(value) => props.onWeightChange(value === undefined ? undefined : Math.round(poundsToKg(value) * 10) / 10)} /><span>lb</span></div>}
           </div>
         </div>
       </div>
@@ -170,9 +174,15 @@ export function PatientSizePanel(props: Props) {
         <div><span>{props.patientMode === 'child' ? 'Age reference BSA' : 'Reference BSA'}</span><strong>{formatNumber(props.referenceBsa, 2)} m²</strong></div>
         <div><span>Adjustment ratio</span><strong>{ratio ? `${formatNumber(ratio, 3)}×` : '—'}</strong></div>
       </div>
+      <label className="switch-row bsa-adjustment-switch">
+        <input type="checkbox" role="switch" aria-label="Adjust quantity for patient body surface area" checked={props.applyBsa} disabled={!calculatedBsa && !props.applyBsa} onChange={(event) => props.onApplyBsaChange(event.target.checked)} />
+        <span><strong>Adjust quantity for body surface area</strong><small>{calculatedBsa ? 'Uses the measured-to-reference BSA ratio shown above.' : 'Enter height and weight to enable this adjustment.'}</small></span>
+      </label>
       <p className="pediatric-assumption">BSA adjustment remains off until selected. Mosteller BSA is an estimate and is less precise in neonates and infants; extreme measured-to-reference ratios are blocked for review.</p>
-      {sizeAssessment.warnings.length > 0 && <div className="patient-size-warning" role="alert"><TriangleAlert size={16} /><span>{sizeAssessment.warnings.join(' ')}</span></div>}
+      {sizeAssessment.warnings.length > 0 && <div className="patient-size-warning"><TriangleAlert size={16} /><span>{sizeAssessment.warnings.join(' ')}</span></div>}
       {props.patientMode === 'adult' && <details className="inline-details"><summary>Advanced BSA settings</summary><label><span>Reference adult BSA</span><div className="unit-input narrow"><input type="number" min="0.1" step="0.01" value={props.adultReferenceBsa} onChange={(event) => props.onReferenceBsaChange(Math.max(0.1, Number(event.target.value)))} /><span>m²</span></div></label></details>}
+        </div>
+      </details>
     </section>
   );
 }

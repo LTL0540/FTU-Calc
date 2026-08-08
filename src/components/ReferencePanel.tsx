@@ -16,13 +16,13 @@ export function ReferencePanel({ onPreset, activePresetIds, patientMode, pediatr
   const selectedCount = activePresetIds.length;
 
   return (
-    <details className="reference-section reference-disclosure embedded-reference">
+    <details className="reference-section reference-disclosure embedded-reference" open={selectedCount === 0}>
       <summary className="reference-summary">
         <div className="section-heading">
           <div className="icon-tile"><BookOpen size={18} /></div>
-          <div><h2>Presets</h2></div>
+          <div><h2>Common treatment areas</h2></div>
         </div>
-        <span>{selectedCount ? `${selectedCount} selected` : `${PROTOCOL_PRESETS.length} regions`}</span>
+        <span>{selectedCount ? `${selectedCount} added` : 'Start here'}</span>
       </summary>
       <div className="reference-body">
         <div className="preset-grid" aria-label="Add treatment-area presets">
@@ -35,7 +35,7 @@ export function ReferencePanel({ onPreset, activePresetIds, patientMode, pediatr
               <button
                 key={preset.id}
                 className={`preset-card${active ? ' active' : ''}`}
-                aria-pressed={active}
+                aria-current={active || undefined}
                 aria-label={`${preset.label}: add ${formatNumber(displayedFtu, 2)} FTU for the current patient model`}
                 onClick={() => onPreset(preset)}
               >

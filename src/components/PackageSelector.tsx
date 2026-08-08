@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, PackagePlus, X } from 'lucide-react';
+import { PackagePlus, X } from 'lucide-react';
 import type { PackageSize } from '../types/calculator';
 import { formatNumber } from '../lib/unitConversions';
 
@@ -7,13 +7,6 @@ type Props = { packages: PackageSize[]; onChange: (items: PackageSize[]) => void
 
 export function PackageSelector({ packages, onChange }: Props) {
   const [newSize, setNewSize] = useState('');
-  const move = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= packages.length) return;
-    const next = [...packages];
-    [next[index], next[target]] = [next[target], next[index]];
-    onChange(next);
-  };
   const add = () => {
     const grams = Number(newSize);
     if (grams <= 0) return;
@@ -22,14 +15,14 @@ export function PackageSelector({ packages, onChange }: Props) {
   };
   return (
     <details className="card settings-card package-card">
-      <summary><span><PackagePlus size={18} /> Package sizes</span><small>{packages.filter((item) => item.enabled).length} enabled</small></summary>
+      <summary><span><PackagePlus size={18} /> Available package sizes</span><small>{packages.filter((item) => item.enabled).length} enabled</small></summary>
       <div className="package-settings">
-        <p>Recommendation rule: prefer one package or matching sizes when excess is within 20% of need, using a 20 g floor and 30 g cap for that allowance. Otherwise minimize excess, then container count.</p>
+        <p>Enable only the sizes available in your setting. The recommendation covers the calculated requirement using the enabled packages.</p>
         <div className="package-list">
-          {packages.map((item, index) => (
+          {packages.map((item) => (
             <div className="package-row" key={item.id}>
               <label><input type="checkbox" checked={item.enabled} onChange={(event) => onChange(packages.map((entry) => entry.id === item.id ? { ...entry, enabled: event.target.checked } : entry))} /><span>{formatNumber(item.grams, 1)} g</span></label>
-              <div><button aria-label={`Move ${item.grams} gram package up`} onClick={() => move(index, -1)} disabled={index === 0}><ChevronUp size={16} /></button><button aria-label={`Move ${item.grams} gram package down`} onClick={() => move(index, 1)} disabled={index === packages.length - 1}><ChevronDown size={16} /></button><button aria-label={`Remove ${item.grams} gram package`} onClick={() => onChange(packages.filter((entry) => entry.id !== item.id))}><X size={16} /></button></div>
+              <div><button aria-label={`Remove ${item.grams} gram package`} onClick={() => onChange(packages.filter((entry) => entry.id !== item.id))}><X size={16} /></button></div>
             </div>
           ))}
         </div>
