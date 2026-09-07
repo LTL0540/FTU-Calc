@@ -8,6 +8,7 @@ import {
   type ResultPresentation,
 } from '../lib/resultPresentation';
 import { formatNumber } from '../lib/unitConversions';
+import { copyText } from '../lib/clipboard';
 import { EstimateNotice, ResultDetailDisclosures, ResultIssueList } from './ResultDetails';
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
 };
 
 export function MobileResultsDrawer({ presentation, displayUnit, onDisplayUnitChange }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const { result } = presentation;
   const issues = result.status.issues;
   const firstIssue = issues.find((issue) => issue.severity === 'blocking') ?? issues[0];
@@ -26,9 +27,9 @@ export function MobileResultsDrawer({ presentation, displayUnit, onDisplayUnitCh
   const quantity = (grams: number, practical = false) => formatDisplayQuantity(grams, displayUnit, practical);
   const copy = async () => {
     if (result.status.isBlocking) return;
-    await navigator.clipboard.writeText(summary);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    const copied = await copyText(summary);
+    setCopyStatus(copied ? 'copied' : 'failed');
+    window.setTimeout(() => setCopyStatus('idle'), 2400);
   };
 
   return (
@@ -59,7 +60,13 @@ export function MobileResultsDrawer({ presentation, displayUnit, onDisplayUnitCh
           </div>
           <div className="mobile-summary-box"><span>Equivalent copy summary</span><p>{summary}</p></div>
           <button type="button" className="mobile-copy-button" onClick={copy} disabled={result.status.isBlocking}>
-            {result.status.isBlocking ? <><ShieldAlert size={16} />Resolve issues to copy</> : <>{copied ? <Check size={16} /> : <Clipboard size={16} />}{copied ? 'Copied' : 'Copy summary'}</>}
+            {result.status.isBlocking
+              ? <><ShieldAlert size={16} />Resolve issues to copy</>
+              : copyStatus === 'copied'
+                ? <><Check size={16} />Copied</>
+                : copyStatus === 'failed'
+                  ? <><TriangleAlert size={16} />Copy failed — try again</>
+                  : <><Clipboard size={16} />Copy summary</>}
           </button>
           <ResultDetailDisclosures presentation={presentation} displayUnit={displayUnit} />
           <EstimateNotice />

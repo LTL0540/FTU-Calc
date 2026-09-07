@@ -1,9 +1,9 @@
-# FTU Calculator
+# QuantiDerm
 
-A responsive clinical tool for estimating the quantity of topical medication
-needed for a prescribed treatment course.
+A responsive beta clinical aid for estimating the quantity of topical
+medication needed for a treatment course.
 
-**[Open FTU Calculator](https://ltl0540.github.io/FTU-Calc/)**
+**[Open QuantiDerm](https://ltl0540.github.io/FTU-Calc/)**
 
 ## Features
 
@@ -42,7 +42,7 @@ vehicle, nozzle, and application technique.
 
 ## Local development
 
-Requirements: Node.js 20+ and pnpm 9+.
+Requirements: Node.js 20.19+ and pnpm 11.19+.
 
 ```bash
 pnpm install
@@ -58,7 +58,8 @@ pnpm test
 ```
 
 The automated suite checks the calculator's clinical conversions, scheduling,
-patient-size adjustment, and package recommendations.
+patient-size adjustment, package recommendations, safety presentation, and
+representative desktop and mobile workflows.
 
 ## Production build
 

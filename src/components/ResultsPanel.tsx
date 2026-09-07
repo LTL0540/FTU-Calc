@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Clipboard, ShieldAlert } from 'lucide-react';
+import { Check, Clipboard, ShieldAlert, TriangleAlert } from 'lucide-react';
 import type { DisplayUnit } from '../types/calculator';
 import {
   buildCalculationSummary,
@@ -8,6 +8,7 @@ import {
   type ResultPresentation,
 } from '../lib/resultPresentation';
 import { formatNumber } from '../lib/unitConversions';
+import { copyText } from '../lib/clipboard';
 import { EstimateNotice, ResultDetailDisclosures, ResultIssueList } from './ResultDetails';
 
 type Props = {
@@ -16,7 +17,7 @@ type Props = {
 };
 
 export function ResultsPanel({ presentation, displayUnit }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const { result } = presentation;
   const isEmpty = !result.status.isBlocking && result.ftuPerApplication <= 0;
   const displayedPackageText = formatPackageComposition(result);
@@ -24,9 +25,9 @@ export function ResultsPanel({ presentation, displayUnit }: Props) {
   const quantity = (grams: number, practical = false) => formatDisplayQuantity(grams, displayUnit, practical);
   const copy = async () => {
     if (result.status.isBlocking) return;
-    await navigator.clipboard.writeText(summary);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    const copied = await copyText(summary);
+    setCopyStatus(copied ? 'copied' : 'failed');
+    window.setTimeout(() => setCopyStatus('idle'), 2400);
   };
 
   return (
@@ -48,7 +49,13 @@ export function ResultsPanel({ presentation, displayUnit }: Props) {
         {!isEmpty && <><details className="summary-preview"><summary>Copyable summary</summary><p>{summary}</p></details>
         <div className="result-actions">
           <button type="button" className="primary-button" onClick={copy} disabled={result.status.isBlocking}>
-            {result.status.isBlocking ? <><ShieldAlert size={18} />Resolve issues to copy</> : <>{copied ? <Check size={18} /> : <Clipboard size={18} />}{copied ? 'Copied' : 'Copy summary'}</>}
+            {result.status.isBlocking
+              ? <><ShieldAlert size={18} />Resolve issues to copy</>
+              : copyStatus === 'copied'
+                ? <><Check size={18} />Copied</>
+                : copyStatus === 'failed'
+                  ? <><TriangleAlert size={18} />Copy failed — try again</>
+                  : <><Clipboard size={18} />Copy summary</>}
           </button>
         </div>
         <ResultDetailDisclosures presentation={presentation} displayUnit={displayUnit} /></>}
