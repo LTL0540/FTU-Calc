@@ -7,9 +7,8 @@ import {
   formatPackageComposition,
   type ResultPresentation,
 } from '../lib/resultPresentation';
-import { formatNumber } from '../lib/unitConversions';
 import { copyText } from '../lib/clipboard';
-import { EstimateNotice, ResultDetailDisclosures, ResultIssueList } from './ResultDetails';
+import { EstimateNotice, ResultContext, ResultDetailDisclosures, ResultIssueList, ResultMetrics } from './ResultDetails';
 
 type Props = {
   presentation: ResultPresentation;
@@ -45,6 +44,7 @@ export function MobileResultsDrawer({ presentation, displayUnit, onDisplayUnitCh
           <span className="mobile-result-summary-value"><small>Suggested dispense</small><strong>{result.status.isBlocking ? 'Review inputs' : quantity(result.suggestedDispensedGrams, true)}</strong><em>{packageComposition}</em></span>
           <span className="mobile-result-summary-value"><small>Calculated need</small><strong>{result.status.isBlocking ? 'Unavailable' : quantity(result.finalRequiredGrams)}</strong></span>
           <span className="mobile-result-cue" aria-hidden="true"><ChevronUp size={18} /><small>Details</small></span>
+          <ResultContext presentation={presentation} />
         </summary>
         <div className="mobile-result-content">
           <ResultIssueList issues={issues} compact />
@@ -53,11 +53,7 @@ export function MobileResultsDrawer({ presentation, displayUnit, onDisplayUnitCh
             <button type="button" className={displayUnit === 'oz' ? 'active' : ''} onClick={() => onDisplayUnitChange('oz')} aria-pressed={displayUnit === 'oz'}>Ounces</button>
             <button type="button" className={displayUnit === 'both' ? 'active' : ''} onClick={() => onDisplayUnitChange('both')} aria-pressed={displayUnit === 'both'}>Both</button>
           </div>
-          <div className="mobile-result-metrics">
-            <div><span>Per application</span><strong>{result.status.isBlocking ? '—' : quantity(result.formulationAdjustedGramsPerApplication)}</strong><small>{formatNumber(result.ftuPerApplication, 2)} FTU</small></div>
-            <div><span>Calculated need</span><strong>{result.status.isBlocking ? '—' : quantity(result.finalRequiredGrams)}</strong><small>{formatNumber(result.totalApplications, 2)} applications</small></div>
-            <div><span>Estimated area</span><strong>{formatNumber(result.approximateBsaPercent, 2)}% BSA</strong><small>{formatNumber(presentation.selectedHandprints, 2)} adult HP eq.</small></div>
-          </div>
+          <ResultMetrics presentation={presentation} displayUnit={displayUnit} className="mobile-result-metrics" />
           <div className="mobile-summary-box"><span>Equivalent copy summary</span><p>{summary}</p></div>
           <button type="button" className="mobile-copy-button" onClick={copy} disabled={result.status.isBlocking}>
             {result.status.isBlocking

@@ -14,6 +14,10 @@ export type ResultPresentation = {
   result: CalculatorResult;
   regions: BodyRegion[];
   selectedHandprints: number;
+  // Known inputs remain available even when the calculation returns blocked outputs.
+  selectedFtu?: number;
+  selectedBsaPercent?: number;
+  plannedApplications?: number;
   areaDescription: string;
   activePresetLabels: string[];
   patientMode: PatientMode;
@@ -50,11 +54,29 @@ export function patientModelLabel(patientMode: PatientMode, pediatricStage: Pedi
   return 'Infant';
 }
 
+export function formatKnownInput(value: number | undefined, suffix = ''): string {
+  return value !== undefined && Number.isFinite(value) && value >= 0
+    ? `${formatNumber(value, 2)}${suffix}`
+    : '—';
+}
+
+export function buildPatientContext(presentation: ResultPresentation): string {
+  const model = presentation.patientMode === 'child' && presentation.pediatricFtuReference
+    ? `Child · ${presentation.pediatricFtuReference.label}`
+    : patientModelLabel(presentation.patientMode, presentation.pediatricStage);
+  return `${model} · ${presentation.applyBsa ? 'BSA adjustment on' : 'BSA adjustment off'}`;
+}
+
+export function buildRegimenContext(presentation: ResultPresentation): string {
+  return `${presentation.frequencyLabel} · ${presentation.durationLabel}${presentation.allowancePercent > 0 ? ` · ${formatNumber(presentation.allowancePercent, 1)}% extra` : ''}`;
+}
+
 export function formatBsaStatus(presentation: ResultPresentation): string {
   if (!presentation.applyBsa) return 'Off (1.000×)';
   const measured = presentation.effectiveBsa
     ? `${formatNumber(presentation.effectiveBsa, 2)} m² measured`
     : 'Measured BSA unavailable';
+  if (presentation.result.status.isBlocking) return `${measured} · ${formatNumber(presentation.referenceBsa, 2)} m² reference; adjustment unavailable while blocked`;
   return `${measured} ÷ ${formatNumber(presentation.referenceBsa, 2)} m² reference = ${presentation.result.bsaRatio.toFixed(3)}×`;
 }
 

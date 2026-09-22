@@ -21,7 +21,7 @@ import { calculateFtu } from './lib/ftuCalculations';
 import { assessAnatomicalBsaPercent } from './lib/anatomicalBsa';
 import { durationValueForUnitChange, FREQUENCIES, getSchedule } from './lib/schedule';
 import { formatNumber, formatOunces } from './lib/unitConversions';
-import { buildConciseResultAnnouncement, shouldShowMobileResults, type ResultPresentation } from './lib/resultPresentation';
+import { buildConciseResultAnnouncement, buildPatientContext, buildRegimenContext, formatKnownInput, shouldShowMobileResults, type ResultPresentation } from './lib/resultPresentation';
 import { hasMeaningfulResetState } from './lib/resetState';
 import { addTreatmentAreaPreset } from './lib/presetSelection';
 import './styles.css';
@@ -139,18 +139,22 @@ export default function App() {
       ? areas.join(' and ')
       : `${areas.slice(0, -1).join(', ')}, and ${areas[areas.length - 1]}`;
   const areaDescription = handprintOverrideEnabled
-    ? `${formatNumber(selectedHandprints, 2)} handprint equivalents (${formatNumber(result.approximateBsaPercent, 2)}% BSA)`
+    ? `${formatNumber(selectedHandprints, 2)} handprint equivalents (${formatNumber(selectedBsaPercent, 2)}% BSA)`
     : describedAreas.length === 0
       ? 'no area selected'
       : describedAreas.length <= 3
         ? formatAreaList(describedAreas)
         : `affected areas, including ${formatAreaList(describedAreas.slice(0, 3))}`;
-  const frequencyLabel = FREQUENCIES.find((item) => item.id === frequency)?.label ?? frequency;
+  const frequencyLabel = frequency === 'custom-day' || frequency === 'custom-week'
+    ? `${formatNumber(customApplications, 2)} applications per ${frequency === 'custom-day' ? 'day' : 'week'}`
+    : FREQUENCIES.find((item) => item.id === frequency)?.label ?? frequency;
   const durationLabel = durationValue > 0 ? `${formatNumber(durationValue, 2)} ${durationUnit}` : 'an unspecified duration';
   const suggestedPackageLabel = result.status.isBlocking
     ? 'Recommendation blocked'
     : result.suggestedPackages.length ? result.suggestedPackages.map((grams) => `${formatNumber(grams, 1)} g`).join(' + ') : 'No package configured';
-  const hasTreatmentArea = result.ftuPerApplication > 0;
+  const hasTreatmentArea = selectedFtu > 0;
+  const knownFtu = !handprintOverrideEnabled && patientMode === 'child' && pediatricSelection.issues.some((issue) => issue.severity === 'blocking') ? undefined : selectedFtu;
+  const knownBsaPercent = !handprintOverrideEnabled && anatomicalBsaAssessment.issues.some((issue) => issue.severity === 'blocking') ? undefined : selectedBsaPercent;
   const displayQuantity = (grams: number, practical = false) => {
     const gramText = `${formatNumber(grams, practical ? 1 : 2)} g`;
     if (displayUnit === 'g') return gramText;
@@ -225,6 +229,9 @@ export default function App() {
     result,
     regions: handprintOverrideEnabled ? [] : regions,
     selectedHandprints,
+    selectedFtu: knownFtu,
+    selectedBsaPercent: knownBsaPercent,
+    plannedApplications: schedule.issues.some((issue) => issue.severity === 'blocking') ? undefined : schedule.totalApplications,
     areaDescription,
     activePresetLabels,
     patientMode,
@@ -328,8 +335,8 @@ export default function App() {
       <header className="topbar">
         <div className="brand"><img className="brand-logo" src="/FTU-Calc/quantiderm-logo.png" alt="QuantiDerm — topical quantity calculator" /><span className="beta-badge" title="QuantiDerm is currently in beta">Beta v0.9</span><h1 className="sr-only">QuantiDerm topical quantity calculator, beta version 0.9</h1></div>
         <section key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}`} className="header-estimate quantity-updated" aria-label="Current dispensing estimate">
-          <div className="header-estimate-main"><span>{hasTreatmentArea ? 'Suggested dispense' : 'Next step'}</span><strong>{result.status.isBlocking ? 'Review inputs' : hasTreatmentArea ? displayQuantity(result.suggestedDispensedGrams, true) : 'Select an area'}</strong><small>{hasTreatmentArea ? suggestedPackageLabel : 'Choose a preset or paint the affected area'}</small></div>
-          <div className="header-estimate-exact"><span>Calculated need</span><strong>{hasTreatmentArea ? displayQuantity(result.finalRequiredGrams) : '—'}</strong></div>
+          <div className="header-estimate-main"><span>{result.status.isBlocking ? 'Review required' : hasTreatmentArea ? 'Suggested dispense' : 'Next step'}</span><strong>{result.status.isBlocking ? 'Review inputs' : hasTreatmentArea ? displayQuantity(result.suggestedDispensedGrams, true) : 'Paint an area'}</strong><small>{result.status.isBlocking ? result.status.issues.find((issue) => issue.severity === 'blocking')?.message : hasTreatmentArea ? suggestedPackageLabel : 'Paint the affected area or choose a preset'}</small></div>
+          <div className="header-estimate-exact"><span>Calculated need</span><strong>{hasTreatmentArea && !result.status.isBlocking ? displayQuantity(result.finalRequiredGrams) : '—'}</strong></div>
           <div className="segmented compact-toggle header-unit-toggle" role="group" aria-label="Display units">
             <button className={displayUnit === 'g' ? 'active' : ''} onClick={() => setDisplayUnit('g')} aria-pressed={displayUnit === 'g'}>Grams</button>
             <button className={displayUnit === 'oz' ? 'active' : ''} onClick={() => setDisplayUnit('oz')} aria-pressed={displayUnit === 'oz'}>Ounces</button>
@@ -337,7 +344,7 @@ export default function App() {
           </div>
         </section>
         <div className="header-controls">
-          <button type="button" className="reset-button" onClick={requestReset}><RotateCcw size={17} /> Reset</button>
+          <button type="button" className="reset-button" aria-label="Reset calculator" title="Reset calculator" onClick={requestReset}><RotateCcw size={17} /><span>Reset</span></button>
         </div>
       </header>
 
@@ -345,11 +352,11 @@ export default function App() {
         <div className="left-stack">
           <section className="card area-card" id="area-section">
             <div className="area-heading">
-              <div><span className="step-label">01 · Treatment area</span><h2>Where will it be applied?</h2><p>Select entire regions or estimate the affected portion.</p></div>
-              <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatNumber(result.ftuPerApplication, 2)} <small>FTU</small></strong><em>{formatNumber(result.approximateBsaPercent, 2)}% estimated BSA</em></div>
+              <div><h2>Where will it be applied?</h2><p>Paint the affected area. Each zone represents 20% of its region.</p></div>
+              <div className="area-live"><span>{handprintOverrideEnabled ? 'Manual override' : 'Selected area'}</span><strong>{formatKnownInput(knownFtu)} <small>FTU</small></strong><em>{formatKnownInput(knownBsaPercent, '%')} estimated BSA</em></div>
             </div>
             <ReferencePanel onPreset={applyPreset} activePresetIds={activePresetIds} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} />
-            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} pediatricFtuReference={pediatricFtuReference} heightCm={heightCm} weightKg={weightKg} modelBsa={modelBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
+            <AnatomyPainter regions={regions} patientMode={patientMode} pediatricStage={pediatricStage} pediatricFtuReference={pediatricFtuReference} heightCm={heightCm} weightKg={weightKg} modelBsa={modelBsa} clearSignal={painterClearSignal} mobilePatientPanel={<PatientSizePanel {...patientSizeProps} />} mobileSchedulePanel={<RegimenPanel {...regimenProps} />} patientContext={buildPatientContext(resultPresentation)} regimenContext={buildRegimenContext(resultPresentation)} mirrorFrontBack={mirrorFrontBack} onMirrorFrontBackChange={setMirrorFrontBack} onChange={updateRegion} onClear={clearPaintedArea} />
             <details className="text-region-entry"><summary>Text-based region entry</summary><AnatomyRegionList regions={regions} patientMode={patientMode} pediatricFtuReference={pediatricFtuReference} onChange={updateRegion} onClear={() => { clearPaintedArea(); setPainterClearSignal((current) => current + 1); }} /></details>
             <details className="reference-note"><summary><CheckCircle2 size={15} /> Regional FTU reference notes</summary><p>{patientMode === 'child'
               ? `Child quantities use the ${pediatricFtuReference.label} broad-region FTU table. Every smaller painter subdivision is a proportional allocation of its cited broad-region total; scalp and genital values are additional proportional estimates because those surfaces are not listed separately.`

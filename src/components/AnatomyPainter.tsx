@@ -22,6 +22,8 @@ type Props = {
   clearSignal: number;
   mobilePatientPanel?: ReactNode;
   mobileSchedulePanel?: ReactNode;
+  patientContext?: string;
+  regimenContext?: string;
   mirrorFrontBack: boolean;
   onMirrorFrontBackChange: (enabled: boolean) => void;
   onChange: (id: string, fraction: number, paintedSegments?: number[]) => void;
@@ -72,15 +74,15 @@ const getCentralTorsoGeometry = (morph: BodyMorph, view: BodyView): CentralTorso
 };
 
 const ADULT_FIGURE_TRANSFORMS: FigureTransforms = {
-  head: 'matrix(1.3 0 0 .95 -24 7.4)',
+  head: 'matrix(1.12 0 0 .78 -9.6 22.5)',
   neck: 'matrix(1.1 0 0 1 -8 3)',
   upperTorso: 'matrix(1.22 0 0 1 -17.6 0)',
   abdomen: 'matrix(1.22 0 0 1 -17.6 0)',
   pelvis: 'matrix(1.22 0 0 1 -17.6 0)',
-  canvasLeftArm: 'matrix(1.18 0 -.04 1 -8.68 0)',
-  canvasRightArm: 'matrix(1.18 0 .04 1 -20.12 0)',
-  canvasLeftLeg: 'matrix(1.28 0 -.025 1 -15.045 0)',
-  canvasRightLeg: 'matrix(1.28 0 .025 1 -29.755 0)',
+  canvasLeftArm: 'matrix(1.32 0 -.04 1 -16.8 0)',
+  canvasRightArm: 'matrix(1.32 0 .04 1 -34.4 0)',
+  canvasLeftLeg: 'matrix(1.45 0 -.025 1 -27.285 0)',
+  canvasRightLeg: 'matrix(1.45 0 .025 1 -44.715 0)',
   buttocks: 'matrix(1.22 0 0 1 -17.6 0)',
 };
 
@@ -146,8 +148,8 @@ const FIGURE_CONTOURS: Record<BodyView, FigurePath[]> = {
     { part: 'upperTorso', d: 'M70 94 Q64 91 60 94 C56 108 55 128 57 148 M90 94 Q96 91 100 94 C104 108 105 128 103 148' },
     { part: 'abdomen', variant: 'abdomen-contour-front', d: '' },
     { part: 'pelvis', d: 'M62 217 C60 230 62 244 66 252 M98 217 C100 230 98 244 94 252' },
-    { part: 'canvasLeftArm', d: 'M58 96 C49 93 42 98 39 107 C36 132 39 153 43 171 C44 191 45 211 47 229 C43 242 43 256 51 268 C58 257 59 245 57 228 C56 207 55 188 55 169 C55 141 56 115 60 99' },
-    { part: 'canvasRightArm', d: 'M102 96 C111 93 118 98 121 107 C124 132 121 153 117 171 C116 191 115 211 113 229 C117 242 117 256 109 268 C102 257 101 245 103 228 C104 207 105 188 105 169 C105 141 104 115 100 99' },
+    { part: 'canvasLeftArm', d: 'M58 96 C49 93 42 98 39 107 C36 132 39 153 43 171 C44 191 45 211 47 229 M57 228 C56 207 55 188 55 169 C55 141 56 115 60 99' },
+    { part: 'canvasRightArm', d: 'M102 96 C111 93 118 98 121 107 C124 132 121 153 117 171 C116 191 115 211 113 229 M103 228 C104 207 105 188 105 169 C105 141 104 115 100 99' },
     { part: 'canvasLeftLeg', d: 'M66 251 C61 276 60 305 63 332 C63 358 64 387 66 411 L57 427 Q56 433 62 435 L75 434 Q79 430 76 411 L74 332 L78 260' },
     { part: 'canvasRightLeg', d: 'M94 251 C99 276 100 305 97 332 C97 358 96 387 94 411 L103 427 Q104 433 98 435 L85 434 Q81 430 84 411 L86 332 L82 260' },
   ],
@@ -157,8 +159,8 @@ const FIGURE_CONTOURS: Record<BodyView, FigurePath[]> = {
     { part: 'upperTorso', d: 'M70 94 Q64 91 60 94 C56 109 55 131 57 153 M90 94 Q96 91 100 94 C104 109 105 131 103 153' },
     { part: 'abdomen', variant: 'abdomen-contour-back', d: '' },
     { part: 'pelvis', d: 'M61 217 C60 231 62 245 66 252 M99 217 C100 231 98 245 94 252' },
-    { part: 'canvasLeftArm', d: 'M58 96 C49 93 42 98 39 107 C36 132 39 153 43 171 C44 191 45 211 47 229 C43 242 43 256 51 268 C58 257 59 245 57 228 C56 207 55 188 55 169 C55 141 56 115 60 99' },
-    { part: 'canvasRightArm', d: 'M102 96 C111 93 118 98 121 107 C124 132 121 153 117 171 C116 191 115 211 113 229 C117 242 117 256 109 268 C102 257 101 245 103 228 C104 207 105 188 105 169 C105 141 104 115 100 99' },
+    { part: 'canvasLeftArm', d: 'M58 96 C49 93 42 98 39 107 C36 132 39 153 43 171 C44 191 45 211 47 229 M57 228 C56 207 55 188 55 169 C55 141 56 115 60 99' },
+    { part: 'canvasRightArm', d: 'M102 96 C111 93 118 98 121 107 C124 132 121 153 117 171 C116 191 115 211 113 229 M103 228 C104 207 105 188 105 169 C105 141 104 115 100 99' },
     { part: 'canvasLeftLeg', d: 'M66 251 C61 276 60 305 63 332 C63 358 64 387 66 411 L57 427 Q56 433 62 435 L75 434 Q79 430 76 411 L74 332 L78 260' },
     { part: 'canvasRightLeg', d: 'M94 251 C99 276 100 305 97 332 C97 358 96 387 94 411 L103 427 Q104 433 98 435 L85 434 Q81 430 84 411 L86 332 L82 260' },
   ],
@@ -196,20 +198,26 @@ const FIGURE_SEAMS: Record<BodyView, FigurePath[]> = {
   ],
 };
 
-export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatricFtuReference, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mobilePatientPanel, mobileSchedulePanel, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
+export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatricFtuReference, heightCm, weightKg, modelBsa: suppliedModelBsa, clearSignal, mobilePatientPanel, mobileSchedulePanel, patientContext, regimenContext, mirrorFrontBack, onMirrorFrontBackChange, onChange, onClear }: Props) {
   const painterShellRef = useRef<HTMLDivElement>(null);
   const pendingFocusRegionId = useRef<string | null>(null);
   const [tool, setTool] = useState<Tool>('paint');
   const [isDragging, setIsDragging] = useState(false);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
+  const [settledRegionId, setSettledRegionId] = useState<string | null>(null);
   const [mobileDrawer, setMobileDrawer] = useState<'size' | 'schedule' | null>(null);
   const [mobileView, setMobileView] = useState<BodyView>('front');
   const [rovingRegionIds, setRovingRegionIds] = useState(() => initialRovingRegionIds(regions));
   const [historyDepth, setHistoryDepth] = useState(0);
+  const [preview, setPreview] = useState<{ regionId: string; segment: number } | null>(null);
+  const activePointer = useRef<number | null>(null);
+  const strokeHasHistory = useRef(false);
   const lastBrushAt = useRef(0);
   const segmentMemory = useRef<Record<string, number[]>>({});
   const history = useRef<Array<{ segments: Record<string, number[]>; activeRegionId: string | null }>>([]);
-  const activeRegion = regions.find((region) => region.id === activeRegionId);
+  // Do not insert/resize the mobile inspector under an in-progress pointer stroke.
+  // The canvas must stay at the same screen coordinates until the pointer is released.
+  const activeRegion = regions.find((region) => region.id === (isDragging ? settledRegionId : activeRegionId));
   const bodyMorph = calculateBodyMorph({ patientMode, pediatricStage, heightCm, weightKg });
   const baseFigureTransforms = patientMode === 'adult' ? ADULT_FIGURE_TRANSFORMS : PEDIATRIC_FIGURE_TRANSFORMS[pediatricStage];
   const figureTransforms = applyBodyMorph(baseFigureTransforms, bodyMorph);
@@ -221,8 +229,33 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
   const getRegionDisplayPath = (region: BodyRegion) => {
     if (region.id === 'abdomen') return centralTorso.front.fill;
     if (region.id === 'lower-back') return centralTorso.back.fill;
+    if (region.id.includes('-hand-')) return region.bounds.x > 80
+      ? 'M103 228 Q108 232 113 229 L113.5 236 Q114 239 115.5 242 Q116.5 245 115 246 Q113.5 247 112 242 L112.5 260 Q112.5 264 110.5 264 L110 266 Q109 268 108 266 Q106.5 268 105.5 265 Q103.5 266 103 262 L102 248 Q102 240 103 228 Z'
+      : 'M57 228 Q52 232 47 229 L46.5 236 Q46 239 44.5 242 Q43.5 245 45 246 Q46.5 247 48 242 L47.5 260 Q47.5 264 49.5 264 L50 266 Q51 268 52 266 Q53.5 268 54.5 265 Q56.5 266 57 262 L58 248 Q58 240 57 228 Z';
     return region.path;
   };
+
+  const endStroke = () => {
+    activePointer.current = null;
+    strokeHasHistory.current = false;
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (!isDragging) setSettledRegionId(activeRegionId);
+  }, [activeRegionId, isDragging]);
+
+  useEffect(() => {
+    const finish = () => { endStroke(); setPreview(null); };
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+    window.addEventListener('blur', finish);
+    return () => {
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+      window.removeEventListener('blur', finish);
+    };
+  }, []);
 
   const getFigurePath = (item: FigurePath) => {
     if (item.variant === 'abdomen-contour-front') return centralTorso.front.contour;
@@ -240,7 +273,11 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
 
   useEffect(() => {
     setActiveRegionId(null);
+    setSettledRegionId(null);
     setIsDragging(false);
+    activePointer.current = null;
+    strokeHasHistory.current = false;
+    setPreview(null);
     setMobileDrawer(null);
     setMobileView('front');
     setRovingRegionIds(initialRovingRegionIds(regions));
@@ -313,7 +350,8 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     const currentSegments = segmentMemory.current[region.id] ?? region.paintedSegments;
     const changed = currentSegments.join(',') !== nextSegments.join(',') || (pairedRegion && (segmentMemory.current[pairedRegion.id] ?? pairedRegion.paintedSegments).join(',') !== pairedSegments?.join(','));
     if (!changed) return;
-    pushHistory();
+    if (activePointer.current === null || !strokeHasHistory.current) pushHistory();
+    if (activePointer.current !== null) strokeHasHistory.current = true;
     commitSegments(region, nextSegments);
     if (pairedRegion) {
       commitSegments(pairedRegion, pairedSegments ?? []);
@@ -338,18 +376,27 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     if (regions.some((region) => region.paintedSegments.length > 0)) pushHistory();
     onClear();
     setActiveRegionId(null);
-    setIsDragging(false);
+    endStroke();
   };
 
   const segmentFromPointer = (event: React.PointerEvent<SVGGElement | SVGPathElement>, region: BodyRegion) => {
-    const visualTarget = event.currentTarget instanceof SVGGElement
+    // Keep preview and hit-testing aligned with the painted zones after BMI/stature transforms.
+    const matrix = event.currentTarget.getScreenCTM?.();
+    if (matrix && typeof DOMPoint !== 'undefined') {
+      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+      const fraction = region.paintAxis === 'horizontal'
+        ? (point.x - region.bounds.x) / region.bounds.width
+        : (point.y - region.bounds.y) / region.bounds.height;
+      return Math.max(0, Math.min(SEGMENT_COUNT - 1, Math.floor(fraction * SEGMENT_COUNT)));
+    }
+    const visualTarget = event.currentTarget.tagName.toLowerCase() === 'g'
       ? event.currentTarget.querySelector<SVGPathElement>('[data-region-shape="true"]')
       : event.currentTarget;
     const rect = (visualTarget ?? event.currentTarget).getBoundingClientRect();
     const position = region.paintAxis === 'horizontal'
       ? (event.clientX - rect.left) / rect.width
       : (event.clientY - rect.top) / rect.height;
-    return Math.max(0, Math.min(SEGMENT_COUNT - 1, Math.floor(position * SEGMENT_COUNT)));
+    return Number.isFinite(position) ? Math.max(0, Math.min(SEGMENT_COUNT - 1, Math.floor(position * SEGMENT_COUNT))) : 0;
   };
 
   const getRegionPoseTransform = (region: BodyRegion) => {
@@ -361,6 +408,12 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     if (region.id === 'upper-chest' || region.id === 'upper-back') return figureTransforms.upperTorso;
     if (region.id === 'abdomen' || region.id === 'lower-back') return figureTransforms.abdomen;
     if (region.id === 'groin') return figureTransforms.pelvis;
+    // Shorten the display geometry about the wrist without changing clinical
+    // region bounds or the five paint zones in its local coordinate system.
+    if (region.id.includes('-hand-')) {
+      const armTransform = isCanvasRight ? figureTransforms.canvasRightArm : figureTransforms.canvasLeftArm;
+      return `${armTransform} translate(0 228) scale(1 .8) translate(0 -228)`;
+    }
     if (/upper-arm|forearm|hand/.test(region.id)) {
       return isCanvasRight ? figureTransforms.canvasRightArm : figureTransforms.canvasLeftArm;
     }
@@ -402,7 +455,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
     return (
       <div className={`body-view-card${mobileView === view ? ' mobile-view-active' : ' mobile-view-hidden'}`}>
         <div className="body-view-label">
-          <span>{view === 'front' ? 'Front' : 'Back'}</span>
+          <span>{view === 'front' ? 'Front' : 'Back'}{mirrorFrontBack && <span className="paired-view-badge">Linked</span>}</span>
           <small title="Visual profile only; does not change the calculation">{profileLabel}</small>
         </div>
         <div className="scroll-gutter scroll-gutter-left" aria-hidden="true" />
@@ -411,8 +464,9 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
           className={`body-svg ${patientMode}${patientMode === 'child' ? ` ${pediatricStage}` : ''}`}
           viewBox={`-5 0 170 ${canvasHeight}`}
           aria-label={`${modelLabel} ${view} body view. ${bodyMorph.measured ? `${bodyMorph.statureLabel}, ${bodyMorph.buildLabel.toLowerCase()} visual profile; visual only. ` : ''}Use arrow keys to move between regions and Space to apply the selected tool.`}
-          onPointerLeave={() => setIsDragging(false)}
-          onPointerUp={() => setIsDragging(false)}
+          onPointerLeave={() => { endStroke(); setPreview(null); }}
+          onPointerUp={endStroke}
+          onPointerCancel={endStroke}
         >
           <defs>
             <linearGradient id={`body-surface-${view}`} x1="0" y1="0" x2="1" y2="0">
@@ -465,24 +519,32 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                   aria-label={`${region.label}, ${formatNumber(region.selectedFraction * 100, 0)}% treated, ${region.paintedSegments.length} of 5 paint zones selected, ${formatNumber((patientMode === 'child' ? pediatricRegionFtu(region.id, pediatricFtuReference) : region.adultHandprints / 2) * region.selectedFraction, 2)} FTU`}
                   onFocus={() => {
                     setRovingRegionIds((current) => current[view] === region.id ? current : { ...current, [view]: region.id });
+                    setActiveRegionId(region.id);
                   }}
                   onKeyDown={(event) => handleKey(event, region)}
                   onPointerDown={(event) => {
+                    if (event.button > 0 || (activePointer.current !== null && activePointer.current !== event.pointerId)) return;
                     event.preventDefault();
+                    activePointer.current = event.pointerId;
+                    strokeHasHistory.current = false;
                     setRovingRegionIds((current) => ({ ...current, [view]: region.id }));
+                    setActiveRegionId(region.id);
                     setIsDragging(true);
                     lastBrushAt.current = Date.now();
                     applyTool(region, segmentFromPointer(event, region));
                   }}
                   onPointerMove={(event) => {
-                    if (isDragging && Date.now() - lastBrushAt.current > 35) {
+                    if (event.pointerType !== 'touch') setPreview({ regionId: region.id, segment: segmentFromPointer(event, region) });
+                    if (isDragging && activePointer.current === event.pointerId && Date.now() - lastBrushAt.current > 35) {
                       lastBrushAt.current = Date.now();
                       applyTool(region, segmentFromPointer(event, region));
                     }
                   }}
                   onPointerEnter={(event) => {
-                    if (isDragging) applyTool(region, segmentFromPointer(event, region));
+                    if (event.pointerType !== 'touch') setPreview({ regionId: region.id, segment: segmentFromPointer(event, region) });
+                    if (isDragging && activePointer.current === event.pointerId) applyTool(region, segmentFromPointer(event, region));
                   }}
+                  onPointerLeave={() => setPreview(null)}
                 >
                   <path d={displayPath} className="anatomy-region-base" style={{ fill: `url(#body-surface-${view})` }} />
                   <g clipPath={`url(#clip-${region.id})`} pointerEvents="none">
@@ -496,6 +558,14 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                         height={horizontal ? region.bounds.height : region.bounds.height / SEGMENT_COUNT}
                       />
                     ))}
+                    {preview?.regionId === region.id && (
+                      <rect className="anatomy-zone-preview"
+                        x={tool === 'whole' || !horizontal ? region.bounds.x : region.bounds.x + region.bounds.width / SEGMENT_COUNT * preview.segment}
+                        y={tool === 'whole' || horizontal ? region.bounds.y : region.bounds.y + region.bounds.height / SEGMENT_COUNT * preview.segment}
+                        width={tool === 'whole' || !horizontal ? region.bounds.width : region.bounds.width / SEGMENT_COUNT}
+                        height={tool === 'whole' || horizontal ? region.bounds.height : region.bounds.height / SEGMENT_COUNT}
+                      />
+                    )}
                     {ALL_SEGMENTS.slice(1).map((segment) => horizontal ? (
                       <line
                         key={`${region.id}-guide-${segment}`}
@@ -527,6 +597,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
               );
             })}
             <g className="figure-contours" aria-hidden="true" pointerEvents="none">
+              {viewRegions.filter((region) => region.id.includes('-hand-')).map((region) => <path key={region.id} d={getRegionDisplayPath(region)} transform={getRegionPoseTransform(region)} />)}
               {FIGURE_CONTOURS[view].map((item, index) => (
                 <path
                   key={`contour-${index}`}
@@ -536,6 +607,11 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
               ))}
             </g>
             <g className="figure-seams" aria-hidden="true" pointerEvents="none">
+              {viewRegions.filter((region) => region.id.includes('-hand-')).map((region) => (
+                <path key={`fingers-${region.id}`} transform={getRegionPoseTransform(region)} d={region.bounds.x > 80
+                  ? 'M105.5 265 L105 253 M108 266 L108 252 M110.5 264 L110.5 253'
+                  : 'M54.5 265 L55 253 M52 266 L52 252 M49.5 264 L49.5 253'} />
+              ))}
               {FIGURE_SEAMS[view].map((item, index) => (
                 <path
                   key={`seam-${index}`}
@@ -556,18 +632,6 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                 {bodyMorph.torsoWidth > 1.16 && <path d="M66 214 Q80 225 94 214" />}
               </g>
             )}
-            {view === 'front' && (
-              <g
-                className="face-details"
-                transform={figureTransforms.head}
-                aria-hidden="true"
-                pointerEvents="none"
-              >
-                <ellipse cx="73.5" cy="63" rx="1.35" ry="1.6" />
-                <ellipse cx="86.5" cy="63" rx="1.35" ry="1.6" />
-                <path d="M80 64.5 L79 70 L81 70" />
-              </g>
-            )}
           </g>
           <text x="8" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'Right' : 'Left'}</text>
           <text x="129" y={canvasHeight - 6} className="side-marker">{view === 'front' ? 'Left' : 'Right'}</text>
@@ -578,44 +642,50 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
 
   return (
     <div ref={painterShellRef} className={`painter-shell tool-${tool}`}>
-      <div className="tool-row" role="toolbar" aria-label="Anatomy selection tools">
-        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'size' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'}>
-          <SlidersHorizontal size={17} /> Patient size
+      <div className="mobile-workflow-context">
+        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'size' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'size' ? null : 'size')} aria-expanded={mobileDrawer === 'size'} aria-controls="mobile-patient-controls">
+          <SlidersHorizontal size={17} /><span><strong>Patient size</strong><small>{patientContext ?? patientMode}</small></span>
         </button>
-        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'schedule' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'schedule' ? null : 'schedule')} aria-expanded={mobileDrawer === 'schedule'}>
-          <CalendarDays size={17} /> Treatment schedule
+        <button type="button" className={`mobile-workflow-button${mobileDrawer === 'schedule' ? ' active' : ''}`} onClick={() => setMobileDrawer((current) => current === 'schedule' ? null : 'schedule')} aria-expanded={mobileDrawer === 'schedule'} aria-controls="mobile-schedule-controls">
+          <CalendarDays size={17} /><span><strong>Treatment schedule</strong><small>{regimenContext}</small></span>
         </button>
+      </div>
+      <div className="mobile-painter-drawer">
+        <section hidden={mobileDrawer !== 'size'} id="mobile-patient-controls" className="mobile-drawer-panel" aria-label="Patient size controls">{mobileDrawer === 'size' && mobilePatientPanel}</section>
+        <section hidden={mobileDrawer !== 'schedule'} id="mobile-schedule-controls" className="mobile-drawer-panel" aria-label="Treatment schedule controls">{mobileDrawer === 'schedule' && mobileSchedulePanel}</section>
+      </div>
+      <div className="tool-row" role="group" aria-label="Anatomy selection tools">
+        <div className="paint-tools" role="group" aria-label="Painting mode">
         <button className={tool === 'paint' ? 'tool active' : 'tool'} onClick={() => setTool('paint')} aria-pressed={tool === 'paint'}>
           <Brush size={17} /> Paint
         </button>
-        <label className={`mirror-toggle${mirrorFrontBack ? ' active' : ''}`} title="Apply paint, erase, and whole-region actions to the corresponding front and back surfaces">
-          <input type="checkbox" checked={mirrorFrontBack} onChange={(event) => onMirrorFrontBackChange(event.target.checked)} />
-          <span>{mirrorFrontBack ? 'Painting both sides' : 'Mirror both sides'}</span>
-        </label>
-        <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} title="Undo the last painter change"><Undo2 size={17} /> Undo</button>
-        <button className={tool === 'whole' ? 'tool active' : 'tool'} onClick={() => setTool('whole')} aria-pressed={tool === 'whole'}>
-          <PaintBucket size={17} /> Fill region
+        <button className={tool === 'whole' ? 'tool active' : 'tool'} onClick={() => setTool('whole')} aria-pressed={tool === 'whole'} title="Fill the entire region">
+          <PaintBucket size={17} /> Fill
         </button>
         <button className={tool === 'erase' ? 'tool active' : 'tool'} onClick={() => setTool('erase')} aria-pressed={tool === 'erase'}>
           <Eraser size={17} /> Erase
         </button>
-        <button className="tool clear-tool" onClick={clearWithUndo}><RotateCcw size={17} /> Clear</button>
+        </div>
+        <div className="paint-history" role="group" aria-label="Painting history">
+          <button className="tool undo-tool" onClick={undo} disabled={historyDepth === 0} aria-label="Undo" title="Undo the last stroke or coverage change"><Undo2 size={17} /><span>Undo</span></button>
+          <button className="tool clear-tool" onClick={clearWithUndo} disabled={!regions.some((region) => region.paintedSegments.length > 0)} aria-label="Clear" title="Clear painted area (can be undone)"><RotateCcw size={17} /><span>Clear</span></button>
+        </div>
       </div>
       <p className="microcopy">
-        <span className="tool-status">{tool === 'paint' ? 'Paint mode' : tool === 'erase' ? 'Erase mode' : 'Whole-region mode'}</span>
-        Each paint or erase click changes one 20% region zone; figures stay zoomed for easy targeting.
-        {mirrorFrontBack ? ' Paired front and back surfaces update together.' : ''}
+        {tool === 'whole' ? 'Tap a region to treat all of it.' : `${tool === 'paint' ? 'Paint' : 'Erase'} by tapping or dragging through 20% zones.`} Undo reverses the last stroke.
       </p>
-      <div className="mobile-painter-drawer">
-        {mobileDrawer && <section className="mobile-drawer-panel" aria-label={mobileDrawer === 'size' ? 'Patient size controls' : 'Treatment schedule controls'}>
-          {mobileDrawer === 'size' ? mobilePatientPanel : mobileSchedulePanel}
-        </section>}
-      </div>
+      <div className="anatomy-view-controls">
       <div className="mobile-view-toggle segmented" role="group" aria-label="Anatomy view">
-        <button type="button" className={mobileView === 'front' ? 'active' : ''} aria-pressed={mobileView === 'front'} onClick={() => setMobileView('front')}>Front</button>
-        <button type="button" className={mobileView === 'back' ? 'active' : ''} aria-pressed={mobileView === 'back'} onClick={() => setMobileView('back')}>Back</button>
+        <button type="button" className={mobileView === 'front' ? 'active' : ''} aria-pressed={mobileView === 'front'} onClick={() => { setMobileView('front'); setActiveRegionId(null); }}>Front</button>
+        <button type="button" className={mobileView === 'back' ? 'active' : ''} aria-pressed={mobileView === 'back'} onClick={() => { setMobileView('back'); setActiveRegionId(null); }}>Back</button>
       </div>
-      <div className="body-views" onPointerUp={() => setIsDragging(false)}>
+      <label className={`mirror-toggle${mirrorFrontBack ? ' active' : ''}`}>
+        <input type="checkbox" checked={mirrorFrontBack} onChange={(event) => onMirrorFrontBackChange(event.target.checked)} />
+        <span>Apply to front + back</span>
+      </label>
+      </div>
+      <div className="painting-stage">
+      <div className="body-views" onPointerUp={endStroke}>
         {renderBodyViewGraphic('front')}
         {renderBodyViewGraphic('back')}
       </div>
@@ -623,7 +693,6 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
         {activeRegion ? (
           <>
             <div>
-              <span className="eyebrow">Active region</span>
               <strong>{activeRegion.label}</strong>
               <small>{formatNumber(patientMode === 'child' ? pediatricRegionFtu(activeRegion.id, pediatricFtuReference) : activeRegion.adultHandprints / 2, 2)} FTU when fully treated · {activeRegion.paintAxis === 'horizontal' ? 'side-to-side' : 'top-to-bottom'} zones</small>
             </div>
@@ -642,18 +711,18 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                   </button>
                 ))}
               </div>
-              <input className="coverage-slider" aria-label={`Coverage of ${activeRegion.label}`} type="range" min="0" max={SEGMENT_COUNT} step="1" value={activeRegion.paintedSegments.length} onChange={(event) => setCoverage(activeRegion, Number(event.target.value))} />
+              <input className="coverage-slider" aria-label={`Coverage of ${activeRegion.label}`} aria-valuetext={`${activeRegion.paintedSegments.length * 20}% treated`} type="range" min="0" max={SEGMENT_COUNT} step="1" value={activeRegion.paintedSegments.length} onChange={(event) => setCoverage(activeRegion, Number(event.target.value))} />
               <div className="coverage-slider-marks" aria-hidden="true"><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span></div>
             </div>
             {(activeRegion.bounds.width < 25 || activeRegion.bounds.height < 35) && (
-              <div className="region-focus-editor">
-                <span>Focused region</span>
+              <details className="region-focus-editor">
+                <summary>Enlarge {activeRegion.label.toLowerCase()}</summary>
                 <svg
                   viewBox={`${activeRegion.bounds.x - 5} ${activeRegion.bounds.y - 5} ${activeRegion.bounds.width + 10} ${activeRegion.bounds.height + 10}`}
                   aria-label={`Enlarged ${activeRegion.label} painting target`}
                 >
-                  <defs><clipPath id={`focus-${activeRegion.id}`}><path d={activeRegion.path} /></clipPath></defs>
-                  <path d={activeRegion.path} className="anatomy-region-base focus-region-base" />
+                  <defs><clipPath id={`focus-${activeRegion.id}`}><path d={getRegionDisplayPath(activeRegion)} /></clipPath></defs>
+                  <path d={getRegionDisplayPath(activeRegion)} className="anatomy-region-base focus-region-base" />
                   <g clipPath={`url(#focus-${activeRegion.id})`} pointerEvents="none">
                     {activeRegion.paintedSegments.map((segment) => (
                       <rect
@@ -667,7 +736,7 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                     ))}
                   </g>
                   <path
-                    d={activeRegion.path}
+                    d={getRegionDisplayPath(activeRegion)}
                     className="focus-region-hit"
                     onPointerDown={(event) => {
                       event.preventDefault();
@@ -675,10 +744,11 @@ export function AnatomyPainter({ regions, patientMode, pediatricStage, pediatric
                     }}
                   />
                 </svg>
-              </div>
+              </details>
             )}
           </>
         ) : <span>Select a body region to fine-tune the affected percentage.</span>}
+      </div>
       </div>
     </div>
   );

@@ -35,6 +35,9 @@ function presentation(result = baseResult): ResultPresentation {
     result,
     regions: [],
     selectedHandprints: 7,
+    selectedFtu: 3.5,
+    selectedBsaPercent: 8.4,
+    plannedApplications: 28,
     areaDescription: 'the anterior trunk',
     activePresetLabels: ['Anterior trunk'],
     patientMode: 'child',
@@ -109,6 +112,36 @@ describe('mobile result safety presentation', () => {
 
     expect(mobile).toContain(summary);
     expect(desktop).toContain(summary);
+  });
+
+  it('keeps the patient band and regimen visible in the collapsed result summary', () => {
+    const html = renderToStaticMarkup(<MobileResultsDrawer presentation={presentation()} displayUnit="g" onDisplayUnitChange={() => undefined} />);
+    const collapsed = html.slice(html.indexOf('<summary'), html.indexOf('</summary>'));
+    expect(collapsed).toContain(pediatricReference.label);
+    expect(collapsed).toContain('BSA adjustment on');
+    expect(collapsed).toContain('Twice daily · 14 days · 10% extra');
+  });
+
+  it('preserves known input metrics instead of rendering the blocked zero outputs', () => {
+    const value = presentation({ ...baseResult, ftuPerApplication: 0, approximateBsaPercent: 0, totalApplications: 0, bsaRatio: 1,
+      status: { isBlocking: true, issues: [{code: 'patient.height.invalid', severity: 'blocking', message: 'Check height.'}] } });
+    const mobile = renderToStaticMarkup(<MobileResultsDrawer presentation={value} displayUnit="g" onDisplayUnitChange={() => undefined} />);
+    const desktop = renderToStaticMarkup(<ResultsPanel presentation={value} displayUnit="g" />);
+    for (const html of [mobile, desktop]) {
+      expect(html).toContain('3.5 FTU selected');
+      expect(html).toContain('28 applications');
+      expect(html).toContain('8.4% BSA');
+      expect(html).not.toContain('0 applications');
+      expect(html).toContain('adjustment unavailable while blocked');
+      expect(html).not.toContain('1.000×');
+    }
+  });
+
+  it('does not present an unknown schedule as zero applications', () => {
+    const value = { ...presentation({ ...baseResult, status: { isBlocking: true, issues: [] } }), plannedApplications: undefined };
+    const html = renderToStaticMarkup(<ResultsPanel presentation={value} displayUnit="g" />);
+    expect(html).not.toContain('0 applications');
+    expect(html).not.toContain('28 applications');
   });
 
   it('keeps the zero-result dock hidden until it has an estimate or issue', () => {

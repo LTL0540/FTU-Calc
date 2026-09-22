@@ -6,6 +6,7 @@ import App from './App';
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('QuantiDerm user workflows', () => {
@@ -66,5 +67,82 @@ describe('QuantiDerm user workflows', () => {
 
     fireEvent.change(unit, { target: { value: 'months' } });
     await waitFor(() => expect(duration.value).toBe(''));
+  });
+
+  it('retains the selected area and schedule when an invalid height blocks the result', () => {
+    const { container } = render(<App />);
+    fireEvent.click(within(container.querySelector('.left-stack') as HTMLElement).getByRole('button', { name: /Face and neck: add/i }));
+    const height = within(container.querySelector('.workflow-middle') as HTMLElement).getByLabelText('Height in centimetres');
+    fireEvent.change(height, { target: { value: '0' } });
+    expect(container.querySelector('.area-live')?.textContent).toContain('2.5 FTU');
+    expect(container.querySelector('.area-live')?.textContent).toContain('3.41%');
+    expect(container.querySelector('.topbar')?.textContent).toContain('Height is outside');
+    expect(container.querySelector('.topbar')?.textContent).not.toContain('Choose a preset');
+    for (const selector of ['.result-metrics', '.mobile-result-metrics']) {
+      expect(container.querySelector(selector)?.textContent).toContain('28 applications');
+      expect(container.querySelector(selector)?.textContent).toContain('2.5 FTU selected');
+    }
+    expect(container.querySelectorAll('.anatomy-region.has-selection')).toHaveLength(3);
+    expect(container.querySelector<HTMLButtonElement>('.mobile-copy-button')?.disabled).toBe(true);
+    fireEvent.change(height, { target: { value: '170' } });
+    expect(container.querySelector<HTMLButtonElement>('.mobile-copy-button')?.disabled).toBe(false);
+  });
+
+  it('retains BMI-responsive geometry without changing the unadjusted quantity', () => {
+    const { container } = render(<App />);
+    fireEvent.click(within(container.querySelector('.left-stack') as HTMLElement).getByRole('button', { name: /Face and neck: add/i }));
+    const controls = within(container.querySelector('.workflow-middle') as HTMLElement);
+    fireEvent.change(controls.getByLabelText('Height in centimetres'), { target: { value: '170' } });
+    fireEvent.change(controls.getByLabelText('Weight in kilograms'), { target: { value: '64' } });
+    const region = container.querySelector('[data-region-id="abdomen"]')!;
+    const initial = region.getAttribute('transform');
+    const resultText = container.querySelector('.hero-result')?.textContent;
+    fireEvent.change(controls.getByLabelText('Weight in kilograms'), { target: { value: '110' } });
+    expect(region.getAttribute('transform')).not.toBe(initial);
+    expect(container.querySelector('.hero-result')?.textContent).toBe(resultText);
+    expect(container.querySelector('.pannus-accent')).not.toBeNull();
+  });
+
+  it('keeps painting primary, previews without changing coverage, and undoes one whole stroke', () => {
+    class PointerEventForTest extends MouseEvent {
+      pointerId: number;
+      pointerType: string;
+      constructor(type: string, options: PointerEventInit = {}) {
+        super(type, options);
+        this.pointerId = options.pointerId ?? 1;
+        this.pointerType = options.pointerType ?? 'mouse';
+      }
+    }
+    vi.stubGlobal('PointerEvent', PointerEventForTest);
+    let timestamp = 100;
+    vi.spyOn(Date, 'now').mockImplementation(() => timestamp);
+    const { container } = render(<App />);
+    const chest = container.querySelector('[data-region-id="upper-chest"]')!;
+    vi.spyOn(chest.querySelector('[data-region-shape]')!, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 100, height: 100 } as DOMRect);
+    const tools = within(container.querySelector('.tool-row') as HTMLElement);
+    expect(tools.getByRole('button', { name: /^Paint$/ }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.pointerMove(chest, { clientX: 10, clientY: 10, pointerId: 1 });
+    expect(chest.querySelector('.anatomy-zone-preview')).not.toBeNull();
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(0);
+    fireEvent.pointerDown(chest, { clientX: 10, clientY: 10, pointerId: 1 });
+    expect(container.querySelector('.region-inspector')?.classList.contains('is-empty')).toBe(true);
+    timestamp = 150;
+    fireEvent.pointerMove(chest, { clientX: 70, clientY: 10, pointerId: 1 });
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(2);
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(container.querySelector('.region-inspector')?.classList.contains('is-empty')).toBe(false);
+    fireEvent.click(tools.getByRole('button', { name: 'Undo' }));
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(0);
+
+    fireEvent.pointerDown(chest, { clientX: 10, clientY: 10, pointerId: 2 });
+    fireEvent.pointerDown(chest, { clientX: 70, clientY: 10, pointerId: 3 });
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(1);
+    fireEvent.pointerCancel(window, { pointerId: 2 });
+    timestamp = 200;
+    fireEvent.pointerMove(chest, { clientX: 70, clientY: 10, pointerId: 2 });
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(1);
+    fireEvent.pointerDown(chest, { clientX: 70, clientY: 10, pointerId: 4 });
+    fireEvent.pointerUp(window, { pointerId: 4 });
+    expect(chest.querySelectorAll('.anatomy-segment-fill')).toHaveLength(2);
   });
 });

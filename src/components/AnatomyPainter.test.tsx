@@ -29,6 +29,11 @@ describe('anatomy painter accessibility', () => {
     expect(html.match(/tabindex="-1"/g)?.length).toBe(regions.length - 2);
     expect(html).toContain('anatomy-region-hit-target expanded');
     expect(html).not.toContain('aria-live=');
+    expect(html).not.toContain('face-details');
+    expect(html).toContain('translate(0 228) scale(1 .8) translate(0 -228)');
+    // Face and hand remain independently selectable clinical regions.
+    expect(html).toContain('data-region-id="face"');
+    expect(html).toContain('data-region-id="left-hand-front"');
   });
 
   it('supports arrow wrapping and Home/End navigation within a figure', () => {
@@ -42,11 +47,12 @@ describe('anatomy painter accessibility', () => {
   it('retains the mobile reflow, internal scrolling, safe-area, and compact toolbar contracts', () => {
     const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
     expect(styles).toContain('@media (max-width: 660px)');
-    expect(styles).toContain('height: min(72dvh, 640px)');
-    expect(styles).toContain('max-height: calc(min(72dvh, 640px) - 68px)');
+    expect(styles).toContain('max-height: min(78dvh, 720px)');
+    expect(styles).not.toContain('calc(min(72dvh, 640px) - 68px)');
     expect(styles).toContain('overflow-y: auto');
     expect(styles).toContain('env(safe-area-inset-bottom)');
     expect(styles).toContain('@media (max-width: 1180px)');
-    expect(styles).toContain('.tool-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }');
+    expect(styles).toContain('.paint-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(styles).toContain('.region-inspector { order: -1; position: sticky;');
   });
 });

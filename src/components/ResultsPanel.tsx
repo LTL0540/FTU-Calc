@@ -7,9 +7,8 @@ import {
   formatPackageComposition,
   type ResultPresentation,
 } from '../lib/resultPresentation';
-import { formatNumber } from '../lib/unitConversions';
 import { copyText } from '../lib/clipboard';
-import { EstimateNotice, ResultDetailDisclosures, ResultIssueList } from './ResultDetails';
+import { EstimateNotice, ResultContext, ResultDetailDisclosures, ResultIssueList, ResultMetrics } from './ResultDetails';
 
 type Props = {
   presentation: ResultPresentation;
@@ -34,18 +33,15 @@ export function ResultsPanel({ presentation, displayUnit }: Props) {
     <aside className="results-column" aria-label="Calculation results">
       <section className="results-card card">
         <div className="results-header">
-          <div><span className="eyebrow">Detailed estimate</span><h2>Calculation summary</h2></div>
+          <div><h2>Calculation summary</h2></div>
         </div>
         <ResultIssueList issues={result.status.issues} />
+        <ResultContext presentation={presentation} />
         <div key={`${result.suggestedDispensedGrams}-${result.finalRequiredGrams}-${result.status.isBlocking}`} className={`hero-result quantity-updated${result.status.isBlocking ? ' blocked-result' : ''}${isEmpty ? ' empty-result' : ''}`}>
           <strong>{result.status.isBlocking ? 'Review inputs' : isEmpty ? 'Select an area' : quantity(result.suggestedDispensedGrams, true)}</strong>
           <span>{isEmpty ? 'Choose a common area above or paint the affected region.' : displayedPackageText}</span>
         </div>
-        {!isEmpty && <div className="result-metrics">
-          <div><span>Per application</span><strong>{result.status.isBlocking ? '—' : quantity(result.formulationAdjustedGramsPerApplication)}</strong><small>{formatNumber(result.ftuPerApplication, 2)} FTU</small></div>
-          <div><span>Calculated need</span><strong>{result.status.isBlocking ? '—' : quantity(result.finalRequiredGrams)}</strong><small>{formatNumber(result.totalApplications, 2)} applications</small></div>
-          <div><span>Estimated area</span><strong>{formatNumber(result.approximateBsaPercent, 2)}% BSA</strong><small>{formatNumber(presentation.selectedHandprints, 2)} adult HP eq.</small></div>
-        </div>}
+        {!isEmpty && <ResultMetrics presentation={presentation} displayUnit={displayUnit} />}
         {!isEmpty && <><details className="summary-preview"><summary>Copyable summary</summary><p>{summary}</p></details>
         <div className="result-actions">
           <button type="button" className="primary-button" onClick={copy} disabled={result.status.isBlocking}>
